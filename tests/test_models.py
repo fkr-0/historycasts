@@ -13,7 +13,6 @@ The models provide strict validation at the boundary between:
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
 
 import pytest
 from pydantic import ValidationError
@@ -28,8 +27,6 @@ from podcast_atlas.models import (
     PlaceRow,
     PodcastRow,
     SpanRow,
-    PlaceKind,
-    EntityKind,
 )
 
 
@@ -327,7 +324,6 @@ class TestPlaceRow:
                 place_kind="invalid_kind",  # type: ignore
             )
 
-        errors = exc_info.value.errors()
         # Should show the valid literal options
         error_str = str(exc_info.value)
         assert "city" in error_str or "region" in error_str
@@ -677,15 +673,13 @@ class TestValidationErrorDocumentation:
 
     def test_multiple_validation_errors_all_reported(self) -> None:
         """Multiple validation failures should all be reported."""
-        with pytest.raises(ValidationError) as exc_info:
+        with pytest.raises(ValidationError):
             EpisodeRow(
                 id="invalid",  # type: ignore
                 podcast_id="invalid",  # type: ignore
                 title="",  # May fail if min_length constraint added
                 pub_date_iso="not-a-date",
             )
-
-        errors = exc_info.value.errors()
 
         # Should report multiple issues
         # Note: Pydantic v2 behavior varies by field types

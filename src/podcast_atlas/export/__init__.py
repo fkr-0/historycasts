@@ -3,8 +3,8 @@
 This package defines static dataset/site export helpers used by CLI orchestration.
 """
 
-from .dataset import export_dataset, write_json
 from .cluster_metrics import compute_cluster_metrics
+from .dataset import export_dataset, write_json
 from .site import build_static_bundle, render_markdown_docs
 
 __all__ = [
