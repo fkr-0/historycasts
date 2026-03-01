@@ -18,7 +18,12 @@ def export_dataset(db_path: str, out_path: str, *, minify: bool = True) -> str:
         "source_db": str(Path(db_path).resolve()),
     }
 
-    podcasts = [dict(r) for r in cur.execute("SELECT id, title, link, language FROM podcasts ORDER BY id").fetchall()]
+    podcasts = [
+        dict(r)
+        for r in cur.execute(
+            "SELECT id, title, link, language FROM podcasts ORDER BY id"
+        ).fetchall()
+    ]
 
     episodes = [
         {
@@ -103,33 +108,61 @@ def export_dataset(db_path: str, out_path: str, *, minify: bool = True) -> str:
         ORDER BY ek.episode_id, ek.score DESC
         """
     ).fetchall():
-        episode_keywords.setdefault(str(r["episode_id"]), []).append({"phrase": r["phrase"], "score": r["score"]})
+        episode_keywords.setdefault(str(r["episode_id"]), []).append(
+            {"phrase": r["phrase"], "score": r["score"]}
+        )
 
-    episode_clusters = {str(r["episode_id"]): r["cluster_id"] for r in cur.execute("SELECT episode_id,cluster_id FROM episode_clusters").fetchall()}
+    episode_clusters = {
+        str(r["episode_id"]): r["cluster_id"]
+        for r in cur.execute("SELECT episode_id,cluster_id FROM episode_clusters").fetchall()
+    }
 
-    clusters = [dict(r) for r in cur.execute("SELECT id,podcast_id,k,label,centroid_year,centroid_lat,centroid_lon FROM clusters ORDER BY podcast_id,id").fetchall()]
+    clusters = [
+        dict(r)
+        for r in cur.execute(
+            "SELECT id,podcast_id,k,label,centroid_year,centroid_lat,centroid_lon FROM clusters ORDER BY podcast_id,id"
+        ).fetchall()
+    ]
 
     # cluster summaries
     cluster_summaries = []
     for c in clusters:
         cid = c["id"]
-        n_members = cur.execute("SELECT COUNT(*) FROM episode_clusters WHERE cluster_id=?", (cid,)).fetchone()[0]
-        kws = [dict(r) for r in cur.execute("SELECT phrase,score FROM cluster_keywords WHERE cluster_id=? ORDER BY score DESC LIMIT 25", (cid,)).fetchall()]
-        ents = [dict(r) for r in cur.execute("SELECT name,kind,score FROM cluster_entities WHERE cluster_id=? ORDER BY score DESC LIMIT 25", (cid,)).fetchall()]
-        cluster_summaries.append({
-            "cluster": {
-                "id": cid,
-                "podcast_id": c["podcast_id"],
-                "k": c["k"],
-                "label": c["label"],
-                "centroid_mid_year": c["centroid_year"],
-                "centroid_lat": c["centroid_lat"],
-                "centroid_lon": c["centroid_lon"],
-                "n_members": n_members,
-            },
-            "top_keywords": kws,
-            "top_entities": [{"name": e["name"], "kind": e["kind"], "count": e["score"]} for e in ents],
-        })
+        n_members = cur.execute(
+            "SELECT COUNT(*) FROM episode_clusters WHERE cluster_id=?", (cid,)
+        ).fetchone()[0]
+        kws = [
+            dict(r)
+            for r in cur.execute(
+                "SELECT phrase,score FROM cluster_keywords WHERE cluster_id=? ORDER BY score DESC LIMIT 25",
+                (cid,),
+            ).fetchall()
+        ]
+        ents = [
+            dict(r)
+            for r in cur.execute(
+                "SELECT name,kind,score FROM cluster_entities WHERE cluster_id=? ORDER BY score DESC LIMIT 25",
+                (cid,),
+            ).fetchall()
+        ]
+        cluster_summaries.append(
+            {
+                "cluster": {
+                    "id": cid,
+                    "podcast_id": c["podcast_id"],
+                    "k": c["k"],
+                    "label": c["label"],
+                    "centroid_mid_year": c["centroid_year"],
+                    "centroid_lat": c["centroid_lat"],
+                    "centroid_lon": c["centroid_lon"],
+                    "n_members": n_members,
+                },
+                "top_keywords": kws,
+                "top_entities": [
+                    {"name": e["name"], "kind": e["kind"], "count": e["score"]} for e in ents
+                ],
+            }
+        )
 
     payload = {
         "meta": meta,

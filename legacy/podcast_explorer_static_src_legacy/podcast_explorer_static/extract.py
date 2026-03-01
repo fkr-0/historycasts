@@ -65,6 +65,7 @@ def segment_text(pure: str) -> list[tuple[str, str]]:
 
 # -------------------- Time extraction --------------------
 
+
 @dataclass(frozen=True)
 class Span:
     start: Optional[dt.date]
@@ -84,7 +85,19 @@ _CENTURY = re.compile(r"\b(\d{1,2})\.\s*Jahrhundert\b", re.IGNORECASE)
 
 # lexical cues
 _CUE_STRONG = ["im jahr", "im jahre", "während", "zur zeit", "zu dieser zeit"]
-_CUE_MED = ["im november", "im dezember", "im februar", "im mai", "im juni", "im juli", "im august", "im september", "im oktober", "im märz", "im april"]
+_CUE_MED = [
+    "im november",
+    "im dezember",
+    "im februar",
+    "im mai",
+    "im juni",
+    "im juli",
+    "im august",
+    "im september",
+    "im oktober",
+    "im märz",
+    "im april",
+]
 
 
 def _mk_date(y: int, m: int = 1, d: int = 1) -> Optional[dt.date]:
@@ -119,13 +132,33 @@ def extract_spans(segment: str, section: str) -> list[Span]:
     for d, m, y, hh, mm in _DATE_DMY_TIME.findall(segment):
         dd = _mk_date(int(y), int(m), int(d))
         if dd:
-            spans.append(Span(dd, dd, "minute", "exact", f"{d}.{m}.{y} {hh}:{mm}", 10.0 * cue_boost * section_weight, review_flag))
+            spans.append(
+                Span(
+                    dd,
+                    dd,
+                    "minute",
+                    "exact",
+                    f"{d}.{m}.{y} {hh}:{mm}",
+                    10.0 * cue_boost * section_weight,
+                    review_flag,
+                )
+            )
 
     # exact d.m.y
     for d, m, y in _DATE_DMY.findall(segment):
         dd = _mk_date(int(y), int(m), int(d))
         if dd:
-            spans.append(Span(dd, dd, "day", "exact", f"{d}.{m}.{y}", 9.0 * cue_boost * section_weight, review_flag))
+            spans.append(
+                Span(
+                    dd,
+                    dd,
+                    "day",
+                    "exact",
+                    f"{d}.{m}.{y}",
+                    9.0 * cue_boost * section_weight,
+                    review_flag,
+                )
+            )
 
     # year ranges
     for ys, ye in _YEAR_RANGE.findall(segment):
@@ -134,7 +167,17 @@ def extract_spans(segment: str, section: str) -> list[Span]:
         s = _mk_date(sy, 1, 1)
         e = _mk_date(ey, 12, 31)
         if s and e:
-            spans.append(Span(s, e, "year", "range", f"{ys}-{ye}", 7.0 * cue_boost * section_weight, review_flag))
+            spans.append(
+                Span(
+                    s,
+                    e,
+                    "year",
+                    "range",
+                    f"{ys}-{ye}",
+                    7.0 * cue_boost * section_weight,
+                    review_flag,
+                )
+            )
 
     # centuries
     for c in _CENTURY.findall(segment):
@@ -142,7 +185,17 @@ def extract_spans(segment: str, section: str) -> list[Span]:
         s = _mk_date((cc - 1) * 100 + 1, 1, 1)
         e = _mk_date(cc * 100, 12, 31)
         if s and e:
-            spans.append(Span(s, e, "century", "range", f"{c}. Jahrhundert", 5.0 * cue_boost * section_weight, review_flag))
+            spans.append(
+                Span(
+                    s,
+                    e,
+                    "century",
+                    "range",
+                    f"{c}. Jahrhundert",
+                    5.0 * cue_boost * section_weight,
+                    review_flag,
+                )
+            )
 
     # single years
     for y in _YEAR.findall(segment):
@@ -154,7 +207,9 @@ def extract_spans(segment: str, section: str) -> list[Span]:
             # penalize lone years in captions even further
             if section == "caption":
                 base *= 0.25
-            spans.append(Span(s, e, "year", "year", y, base * cue_boost * section_weight, review_flag))
+            spans.append(
+                Span(s, e, "year", "year", y, base * cue_boost * section_weight, review_flag)
+            )
 
     # dedupe by (start,end,precision,qualifier)
     uniq: dict[tuple, Span] = {}
@@ -207,9 +262,15 @@ def extract_places(segment: str, gaz: Gazetteer) -> list[tuple[str, str, float, 
 
 # -------------------- Entity extraction --------------------
 
-_PERSON = re.compile(r"\b([A-ZÄÖÜ][a-zäöüß]+(?:\s+(?:von|der|de|del|da|di))?\s+[A-ZÄÖÜ][a-zäöüß]+)\b")
-_ORG = re.compile(r"\b([A-ZÄÖÜ][\wÄÖÜäöüß\- ]{2,}\b(?:GmbH|AG|Universität|University|Institut|Stiftung|Bundestag|KPdSU|CDU|CSU|NSDAP|KPD|SPD))\b")
-_EVENT = re.compile(r"\b(Schlacht\s+von\s+[A-ZÄÖÜ][\wÄÖÜäöüß\-]+|Revolution\s+[A-ZÄÖÜ][\wÄÖÜäöüß\-]+|Gründung\s+der\s+[A-ZÄÖÜ][\wÄÖÜäöüß\-]+|Attentat\s+auf\s+[A-ZÄÖÜ][\wÄÖÜäöüß\-]+|Parteitag\s+der\s+[A-ZÄÖÜ][\wÄÖÜäöüß\-]+)\b")
+_PERSON = re.compile(
+    r"\b([A-ZÄÖÜ][a-zäöüß]+(?:\s+(?:von|der|de|del|da|di))?\s+[A-ZÄÖÜ][a-zäöüß]+)\b"
+)
+_ORG = re.compile(
+    r"\b([A-ZÄÖÜ][\wÄÖÜäöüß\- ]{2,}\b(?:GmbH|AG|Universität|University|Institut|Stiftung|Bundestag|KPdSU|CDU|CSU|NSDAP|KPD|SPD))\b"
+)
+_EVENT = re.compile(
+    r"\b(Schlacht\s+von\s+[A-ZÄÖÜ][\wÄÖÜäöüß\-]+|Revolution\s+[A-ZÄÖÜ][\wÄÖÜäöüß\-]+|Gründung\s+der\s+[A-ZÄÖÜ][\wÄÖÜäöüß\-]+|Attentat\s+auf\s+[A-ZÄÖÜ][\wÄÖÜäöüß\-]+|Parteitag\s+der\s+[A-ZÄÖÜ][\wÄÖÜäöüß\-]+)\b"
+)
 
 
 def extract_entities(segment: str) -> list[tuple[str, str, float, str]]:
@@ -244,9 +305,49 @@ def extract_entities(segment: str) -> list[tuple[str, str, float, str]]:
 # -------------------- Keywords (RAKE-like, tiny) --------------------
 
 _STOP_DE = {
-    "der","die","das","und","oder","aber","wenn","weil","dass","ist","sind","war","waren",
-    "eine","ein","einer","eines","einem","im","in","am","an","auf","aus","bei","mit","von","zu",
-    "für","über","um","als","auch","noch","mehr","nicht","wir","ihr","euch","uns","diese","dieser","dieses",
+    "der",
+    "die",
+    "das",
+    "und",
+    "oder",
+    "aber",
+    "wenn",
+    "weil",
+    "dass",
+    "ist",
+    "sind",
+    "war",
+    "waren",
+    "eine",
+    "ein",
+    "einer",
+    "eines",
+    "einem",
+    "im",
+    "in",
+    "am",
+    "an",
+    "auf",
+    "aus",
+    "bei",
+    "mit",
+    "von",
+    "zu",
+    "für",
+    "über",
+    "um",
+    "als",
+    "auch",
+    "noch",
+    "mehr",
+    "nicht",
+    "wir",
+    "ihr",
+    "euch",
+    "uns",
+    "diese",
+    "dieser",
+    "dieses",
 }
 
 
@@ -266,8 +367,8 @@ def rake_phrases(text: str, *, max_phrases: int = 25) -> list[tuple[str, float]]
         phrases.append(cur)
 
     # word frequency & degree
-    freq: dict[str,int] = {}
-    deg: dict[str,int] = {}
+    freq: dict[str, int] = {}
+    deg: dict[str, int] = {}
     for ph in phrases:
         unique = ph
         d = len(unique)
@@ -275,7 +376,7 @@ def rake_phrases(text: str, *, max_phrases: int = 25) -> list[tuple[str, float]]
             freq[w] = freq.get(w, 0) + 1
             deg[w] = deg.get(w, 0) + (d - 1)
 
-    scores: dict[str,float] = {}
+    scores: dict[str, float] = {}
     for ph in phrases:
         if len(ph) > 5:
             continue

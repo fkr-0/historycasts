@@ -26,7 +26,12 @@ def test_compile_queue_to_sql_generates_transactional_script() -> None:
             "op_id": "op-2",
             "entity_type": "relation",
             "op_type": "link",
-            "payload": {"left_id": 42, "right_id": 7, "left_col": "episode_id", "right_col": "cluster_id"},
+            "payload": {
+                "left_id": 42,
+                "right_id": 7,
+                "left_col": "episode_id",
+                "right_col": "cluster_id",
+            },
         },
         {
             "op_id": "op-3",

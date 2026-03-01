@@ -34,7 +34,10 @@ def test_compute_cluster_metrics_returns_expected_sections() -> None:
         "clusters": [
             {
                 "cluster": {"id": 100},
-                "top_keywords": [{"phrase": "revolution", "score": 4.0}, {"phrase": "europe", "score": 2.0}],
+                "top_keywords": [
+                    {"phrase": "revolution", "score": 4.0},
+                    {"phrase": "europe", "score": 2.0},
+                ],
             },
             {"cluster": {"id": 101}, "top_keywords": [{"phrase": "europe", "score": 5.0}]},
         ],
