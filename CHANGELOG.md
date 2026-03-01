@@ -2,7 +2,11 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-03-01
+
 ### Added
+- Added `podcast-atlas delete-spans` CLI command for FK-safe time span cleanup per episode.
+- Added `podcast_atlas.curation.delete_episode_spans` helper and `scripts/delete_episode_spans.py`.
 - Added cluster detail center-tab UX with synchronized term/year filtering and cluster-scoped episodes table.
 - Added term co-occurrence mini graph with clickable term nodes that apply scope filtering.
 - Added cluster entity/place lift tables with sortable ranking controls.
@@ -12,9 +16,17 @@
 - Added frontend tests for URL scope round-trip and cluster index behaviors.
 
 ### Changed
+- Reinitialized repository history with a sane `.gitignore` and committed `active.db` as phase-1 CI source.
+- Updated GitHub Pages workflow to derive dataset and web artifacts directly from committed `active.db`.
+- Added Pages base-path support via `VITE_BASE_PATH` in `frontend/vite.config.ts`.
 - Cluster selection from filters/search now opens and focuses dedicated cluster tabs instead of only setting a passive filter.
 - Extended integration coverage for cluster drill-down behavior in `frontend/src/App.integration.test.tsx`.
 - Updated architecture and implementation-plan docs for current intent queue + cluster exploration progress.
+
+### Fixed
+- Fixed panel-resize constraints by using percentage sizes in `AppFrame` with `react-resizable-panels`.
+- Fixed docs modal rendering/theme and fenced code block output (language labels, no leading blank line, block code styling).
+- Fixed Ruff lint violations in export/test modules and restored clean `make lint` checks.
 
 ## [0.2.0] - 2026-02-27
 
