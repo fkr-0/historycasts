@@ -719,7 +719,9 @@ class TestValidationErrorDocumentation:
         # Should indicate valid kind values
         assert "kind" in error_str.lower()
         # Valid options include person, org, event, place, unknown
-        has_valid_option = any(v in error_str for v in ["person", "org", "event", "place", "unknown"])
+        has_valid_option = any(
+            v in error_str for v in ["person", "org", "event", "place", "unknown"]
+        )
         assert has_valid_option
 
     def test_required_field_error_is_clear(self) -> None:

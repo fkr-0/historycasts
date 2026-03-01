@@ -79,7 +79,9 @@ def compile_queue_to_sql(queue: list[dict[str, Any]]) -> str:
         op_id = op.get("op_id", "unknown")
         preconditions = op.get("preconditions")
         if preconditions:
-            lines.append(f"-- preconditions for {op_id}: {json.dumps(preconditions, ensure_ascii=False)}")
+            lines.append(
+                f"-- preconditions for {op_id}: {json.dumps(preconditions, ensure_ascii=False)}"
+            )
         lines.append(f"-- op {op_id} ({op.get('op_type')})")
         lines.append(op_to_sql(op))
     lines.append("COMMIT;")
@@ -93,13 +95,15 @@ def _load_ops(path: Path) -> list[dict[str, Any]]:
         return payload
     if isinstance(payload, dict) and isinstance(payload.get("operations"), list):
         return payload["operations"]
-    raise ValueError("Input must be an array of ops or {\"operations\": [...]}")
+    raise ValueError('Input must be an array of ops or {"operations": [...]}')
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Compile local operation queue JSON into SQL script")
     ap.add_argument("--in", dest="in_path", required=True, help="Input queue JSON path")
-    ap.add_argument("--out", dest="out_path", default="-", help="Output SQL path, or '-' for stdout")
+    ap.add_argument(
+        "--out", dest="out_path", default="-", help="Output SQL path, or '-' for stdout"
+    )
     args = ap.parse_args()
 
     ops = _load_ops(Path(args.in_path))

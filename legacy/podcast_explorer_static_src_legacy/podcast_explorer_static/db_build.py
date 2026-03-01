@@ -7,7 +7,15 @@ from typing import Iterable, Optional
 
 from .schema import ensure_schema
 from .rss_parse import parse_rss
-from .extract import clean_description, segment_text, extract_spans, extract_places, extract_entities, rake_phrases, best_span
+from .extract import (
+    clean_description,
+    segment_text,
+    extract_spans,
+    extract_places,
+    extract_entities,
+    rake_phrases,
+    best_span,
+)
 from .gazetteer import Gazetteer, load_gazetteer_csv, norm_key
 from .cluster import Point, k_for_n, kmeans
 
@@ -58,13 +66,23 @@ def _upsert_podcast(conn: sqlite3.Connection, info) -> int:
         INSERT INTO podcasts (title, description, language, link, image_url, feed_url, feed_type)
         VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
-        (info.title, info.description, info.language, info.link, info.image_url, info.feed_url, info.feed_type),
+        (
+            info.title,
+            info.description,
+            info.language,
+            info.link,
+            info.image_url,
+            info.feed_url,
+            info.feed_type,
+        ),
     )
     conn.commit()
     return int(cur.lastrowid)
 
 
-def _insert_episode(conn: sqlite3.Connection, podcast_id: int, item, *, limit_existing: bool = True) -> Optional[int]:
+def _insert_episode(
+    conn: sqlite3.Connection, podcast_id: int, item, *, limit_existing: bool = True
+) -> Optional[int]:
     # guid unique
     if limit_existing:
         row = conn.execute("SELECT id FROM episodes WHERE guid=?", (item.guid,)).fetchone()
@@ -100,7 +118,7 @@ def _insert_episode(conn: sqlite3.Connection, podcast_id: int, item, *, limit_ex
 
 
 def _insert_links(conn: sqlite3.Connection, episode_id: int, raw: str, page_url: str) -> None:
-    urls = [u.rstrip(".,);\"") for u in _URL_RE.findall(raw or "")]
+    urls = [u.rstrip('.,);"') for u in _URL_RE.findall(raw or "")]
     if not urls:
         return
     internal_dom = None
@@ -113,7 +131,10 @@ def _insert_links(conn: sqlite3.Connection, episode_id: int, raw: str, page_url:
         lt = "external"
         if internal_dom and internal_dom in u:
             lt = "internal"
-        if any(x in u.lower() for x in ["instagram", "tiktok", "facebook", "linktr", "seven.one", "ardsoundsfestival"]):
+        if any(
+            x in u.lower()
+            for x in ["instagram", "tiktok", "facebook", "linktr", "seven.one", "ardsoundsfestival"]
+        ):
             lt = "advert"
         rows.append((episode_id, u, lt))
     conn.executemany("INSERT INTO links (episode_id, url, link_type) VALUES (?, ?, ?)", rows)
@@ -151,7 +172,11 @@ def build_db(db_path: str, rss_paths: list[str], gazetteer_csv: str, *, limit: i
             _insert_links(conn, eid, it.description_raw, it.page_url)
 
             # segments + extraction
-            segs = segment_text(conn.execute("SELECT description_pure FROM episodes WHERE id=?", (eid,)).fetchone()[0])
+            segs = segment_text(
+                conn.execute("SELECT description_pure FROM episodes WHERE id=?", (eid,)).fetchone()[
+                    0
+                ]
+            )
             best_span_id = None
             best_span_score = -1.0
             best_place_id = None
@@ -193,7 +218,7 @@ def build_db(db_path: str, rss_paths: list[str], gazetteer_csv: str, *, limit: i
 
                 # places
                 places = extract_places(txt, gaz)
-                for (canon, kind, lat, lon, radius) in places:
+                for canon, kind, lat, lon, radius in places:
                     pnid = _ensure_place_norm(conn, canon, kind)
                     cur3 = conn.execute(
                         """
@@ -219,11 +244,15 @@ def build_db(db_path: str, rss_paths: list[str], gazetteer_csv: str, *, limit: i
                 if section == "main":
                     for phrase, score in rake_phrases(txt, max_phrases=25):
                         # insert keyword
-                        row = conn.execute("SELECT id FROM keywords WHERE phrase=?", (phrase,)).fetchone()
+                        row = conn.execute(
+                            "SELECT id FROM keywords WHERE phrase=?", (phrase,)
+                        ).fetchone()
                         if row:
                             kid = int(row[0])
                         else:
-                            curk = conn.execute("INSERT INTO keywords (phrase) VALUES (?)", (phrase,))
+                            curk = conn.execute(
+                                "INSERT INTO keywords (phrase) VALUES (?)", (phrase,)
+                            )
                             kid = int(curk.lastrowid)
                         conn.execute(
                             "INSERT OR REPLACE INTO episode_keywords (episode_id, keyword_id, score) VALUES (?, ?, ?)",
@@ -231,7 +260,10 @@ def build_db(db_path: str, rss_paths: list[str], gazetteer_csv: str, *, limit: i
                         )
 
             # set best ids
-            conn.execute("UPDATE episodes SET best_span_id=?, best_place_id=? WHERE id=?", (best_span_id, best_place_id, eid))
+            conn.execute(
+                "UPDATE episodes SET best_span_id=?, best_place_id=? WHERE id=?",
+                (best_span_id, best_place_id, eid),
+            )
             conn.commit()
 
             count += 1
@@ -283,18 +315,26 @@ def _recompute_clusters(conn: sqlite3.Connection) -> None:
         for j, (cy, clat, clon) in enumerate(centroids):
             cur = conn.execute(
                 "INSERT INTO clusters (podcast_id, k, label, centroid_year, centroid_lat, centroid_lon) VALUES (?, ?, ?, ?, ?, ?)",
-                (pid, k, f"C{j+1}", float(cy), float(clat), float(clon)),
+                (pid, k, f"C{j + 1}", float(cy), float(clat), float(clon)),
             )
             cluster_ids.append(int(cur.lastrowid))
 
         for eid, j in assign.items():
-            conn.execute("INSERT INTO episode_clusters (episode_id, cluster_id) VALUES (?, ?)", (eid, cluster_ids[int(j)]))
+            conn.execute(
+                "INSERT INTO episode_clusters (episode_id, cluster_id) VALUES (?, ?)",
+                (eid, cluster_ids[int(j)]),
+            )
 
         conn.commit()
 
         # summaries: top keywords and entities per cluster
         for cid in cluster_ids:
-            ep_ids = [r[0] for r in conn.execute("SELECT episode_id FROM episode_clusters WHERE cluster_id=?", (cid,)).fetchall()]
+            ep_ids = [
+                r[0]
+                for r in conn.execute(
+                    "SELECT episode_id FROM episode_clusters WHERE cluster_id=?", (cid,)
+                ).fetchall()
+            ]
             if not ep_ids:
                 continue
 
@@ -304,7 +344,7 @@ def _recompute_clusters(conn: sqlite3.Connection) -> None:
                 SELECT k.phrase, SUM(ek.score) AS s
                 FROM episode_keywords ek
                 JOIN keywords k ON k.id = ek.keyword_id
-                WHERE ek.episode_id IN ({','.join('?'*len(ep_ids))})
+                WHERE ek.episode_id IN ({",".join("?" * len(ep_ids))})
                 GROUP BY k.phrase
                 ORDER BY s DESC
                 LIMIT 25
@@ -320,7 +360,7 @@ def _recompute_clusters(conn: sqlite3.Connection) -> None:
                 f"""
                 SELECT name, kind, COUNT(*) AS c
                 FROM entities
-                WHERE episode_id IN ({','.join('?'*len(ep_ids))})
+                WHERE episode_id IN ({",".join("?" * len(ep_ids))})
                 GROUP BY name, kind
                 ORDER BY c DESC
                 LIMIT 25

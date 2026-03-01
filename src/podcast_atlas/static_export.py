@@ -321,9 +321,7 @@ def export_dataset(db_path: Path | str) -> Dict[str, Any]:
         for rc in raw_clusters:
             cid = rc["id"]
             n_members = (
-                rc["n_members"]
-                if rc["n_members"] is not None
-                else member_counts.get(rc["id"], 0)
+                rc["n_members"] if rc["n_members"] is not None else member_counts.get(rc["id"], 0)
             )
             cluster_row = ClusterRow(
                 id=rc["id"],

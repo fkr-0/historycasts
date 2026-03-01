@@ -103,7 +103,9 @@ def html_to_text(s: str) -> str:
     return s.strip()
 
 
-def parse_rss(path: str, feed_url: Optional[str] = None) -> tuple[PodcastInfo, Iterator[EpisodeItem]]:
+def parse_rss(
+    path: str, feed_url: Optional[str] = None
+) -> tuple[PodcastInfo, Iterator[EpisodeItem]]:
     tree = ET.parse(path)
     root = tree.getroot()
     channel = root.find("channel")

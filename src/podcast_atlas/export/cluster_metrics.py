@@ -118,7 +118,9 @@ def compute_cluster_metrics(payload: dict[str, Any]) -> dict[str, list[dict[str,
         episode_count = len(member_eps)
         podcast_counts = Counter(int(e.get("podcast_id", -1)) for e in member_eps)
         dominant_podcast_share = _safe_div(max(podcast_counts.values(), default=0), episode_count)
-        years = sorted(y for e in member_eps if (y := _year_from_iso(e.get("pub_date_iso"))) is not None)
+        years = sorted(
+            y for e in member_eps if (y := _year_from_iso(e.get("pub_date_iso"))) is not None
+        )
         median_pub_year = int(median(years)) if years else None
 
         span_scores: list[float] = []
@@ -159,7 +161,9 @@ def compute_cluster_metrics(payload: dict[str, Any]) -> dict[str, list[dict[str,
                 "dominant_podcast_share": round(dominant_podcast_share, 6),
                 "median_pub_year": median_pub_year,
                 "temporal_span_years": temporal_span_years,
-                "mean_span_confidence": round(mean_span_confidence, 6) if mean_span_confidence is not None else None,
+                "mean_span_confidence": round(mean_span_confidence, 6)
+                if mean_span_confidence is not None
+                else None,
                 "geo_dispersion": round(geo_dispersion, 6) if geo_dispersion is not None else None,
                 "cohesion_proxy": round(cohesion_proxy, 6) if cohesion_proxy is not None else None,
             }
@@ -209,7 +213,10 @@ def compute_cluster_metrics(payload: dict[str, Any]) -> dict[str, list[dict[str,
         )
         for (name, kind), count in cluster_entity_counts.most_common(50):
             global_count = max(1, global_entity_counts[(name, kind)])
-            lift = _safe_div(_safe_div(count, max(1, len(cluster_entities))), _safe_div(global_count, max(1, len(entities))))
+            lift = _safe_div(
+                _safe_div(count, max(1, len(cluster_entities))),
+                _safe_div(global_count, max(1, len(entities))),
+            )
             cluster_entity_stats.append(
                 {
                     "cluster_id": cid,
@@ -220,8 +227,12 @@ def compute_cluster_metrics(payload: dict[str, Any]) -> dict[str, list[dict[str,
                 }
             )
 
-        global_place_counts: Counter[str] = Counter(str(p.get("canonical_name", "")) for p in places)
-        cluster_place_counts: Counter[str] = Counter(str(p.get("canonical_name", "")) for p in cluster_places)
+        global_place_counts: Counter[str] = Counter(
+            str(p.get("canonical_name", "")) for p in places
+        )
+        cluster_place_counts: Counter[str] = Counter(
+            str(p.get("canonical_name", "")) for p in cluster_places
+        )
         place_coords: dict[str, tuple[float | None, float | None]] = {}
         for p in cluster_places:
             name = str(p.get("canonical_name", ""))
@@ -229,7 +240,10 @@ def compute_cluster_metrics(payload: dict[str, Any]) -> dict[str, list[dict[str,
                 place_coords[name] = (p.get("lat"), p.get("lon"))
         for name, count in cluster_place_counts.most_common(50):
             global_count = max(1, global_place_counts[name])
-            lift = _safe_div(_safe_div(count, max(1, len(cluster_places))), _safe_div(global_count, max(1, len(places))))
+            lift = _safe_div(
+                _safe_div(count, max(1, len(cluster_places))),
+                _safe_div(global_count, max(1, len(places))),
+            )
             lat, lon = place_coords.get(name, (None, None))
             cluster_place_stats.append(
                 {
@@ -243,9 +257,7 @@ def compute_cluster_metrics(payload: dict[str, Any]) -> dict[str, list[dict[str,
             )
 
         # Next-step suggestions.
-        top_terms = [
-            t for t in cluster_term_metrics if t["cluster_id"] == cid
-        ]
+        top_terms = [t for t in cluster_term_metrics if t["cluster_id"] == cid]
         top_terms.sort(key=lambda x: x["lift"], reverse=True)
         if top_terms:
             top = top_terms[0]
@@ -265,10 +277,15 @@ def compute_cluster_metrics(payload: dict[str, Any]) -> dict[str, list[dict[str,
     for i, a in enumerate(cluster_ids):
         for b in cluster_ids[i + 1 :]:
             jaccard = _jaccard(cluster_to_episode_ids[a], cluster_to_episode_ids[b])
-            cosine = _cosine_similarity(cluster_term_vectors.get(a, {}), cluster_term_vectors.get(b, {}))
+            cosine = _cosine_similarity(
+                cluster_term_vectors.get(a, {}), cluster_term_vectors.get(b, {})
+            )
             bridge_terms = sorted(
                 set(cluster_term_vectors.get(a, {})) & set(cluster_term_vectors.get(b, {})),
-                key=lambda t: (cluster_term_vectors.get(a, {}).get(t, 0.0) + cluster_term_vectors.get(b, {}).get(t, 0.0)),
+                key=lambda t: (
+                    cluster_term_vectors.get(a, {}).get(t, 0.0)
+                    + cluster_term_vectors.get(b, {}).get(t, 0.0)
+                ),
                 reverse=True,
             )[:5]
             if jaccard > 0 or cosine > 0:

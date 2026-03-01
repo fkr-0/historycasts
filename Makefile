@@ -7,6 +7,7 @@ test:
 	uv run pytest
 
 lint:
+	uv run ruff format src tests scripts
 	uv run ruff check src tests scripts
 	uv run mypy
 
