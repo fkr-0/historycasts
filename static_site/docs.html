@@ -1,0 +1,48 @@
+<h3>About this project</h3>
+<p>
+  This static application demonstrates a lightweight exploration of multiple
+  podcasts.  It is entirely client‑side: it fetches a single
+  <code>dataset.json</code> file and renders the contents without any
+  backend API.  You can host the directory containing <code>index.html</code>,
+  <code>dataset.json</code> and <code>docs.html</code> on any static file
+  server, and the site will continue to function.
+</p>
+<h3>Features</h3>
+<ul>
+  <li>A list of all included podcasts, selectable in the sidebar.</li>
+  <li>A list of episodes for the selected podcast, including title,
+      publication date and description.</li>
+  <li>Dark‑mode support.  The interface automatically picks up your
+      system preference, and you can override it using the toggle in the
+      sidebar.  Your choice is stored in localStorage.</li>
+  <li>A simple navigation between the home view and this documentation.</li>
+</ul>
+<h3>Extensibility</h3>
+<p>
+  This demo intentionally keeps the data model minimal: each episode
+  record contains a <strong>kind</strong> classification (special,
+  meta or regular) and a <strong>cluster_id</strong> based on its
+  publication decade.  If you wish to add richer information—such as
+  historical time spans, places, people or topics—you can extend the
+  JSON structure and update <code>index.html</code> accordingly.  The
+  modular design of the user interface makes it straightforward to
+  incorporate additional panels or visualisations.
+</p>
+<h3>Building the dataset</h3>
+<p>
+  The dataset is built using the accompanying Python script
+  <code>build_dataset.py</code>, which accepts multiple RSS files and
+  outputs a consolidated JSON file.  For example:
+</p>
+<pre>
+python build_dataset.py --rss mp3.rss --rss feed --rss esh.xml --rss rest-gesch.xml --out dataset.json
+</pre>
+<p>
+  You can run this command in an environment with Python 3.9+ to
+  regenerate <code>dataset.json</code> whenever the feeds change.
+</p>
+<h3>License</h3>
+<p>
+  The code for this demo is released into the public domain.  Feel
+  free to adapt it to your needs.
+</p>

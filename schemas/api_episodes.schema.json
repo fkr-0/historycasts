@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "API Episodes Response",
+  "type": "object",
+  "required": ["episodes", "count"],
+  "properties": {
+    "count": {"type": "integer", "minimum": 0},
+    "episodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "podcast_id",
+          "guid",
+          "title",
+          "published_at",
+          "incident_type",
+          "primary_time",
+          "persons",
+          "links",
+          "description"
+        ],
+        "properties": {
+          "podcast_id": {"type": "string"},
+          "guid": {"type": "string"},
+          "title": {"type": "string"},
+          "published_at": {"type": "string"},
+          "audio_url": {"type": ["string", "null"]},
+          "duration_seconds": {"type": ["integer", "null"]},
+          "incident_type": {"type": "string"},
+          "primary_time": {
+            "type": "object",
+            "required": ["kind"],
+            "properties": {
+              "kind": {"type": "string"},
+              "year": {"type": ["integer", "null"]},
+              "start_year": {"type": ["integer", "null"]},
+              "end_year": {"type": ["integer", "null"]}
+            }
+          },
+          "primary_location": {
+            "type": ["object", "null"],
+            "required": ["name", "lat", "lon"],
+            "properties": {
+              "name": {"type": "string"},
+              "country": {"type": ["string", "null"]},
+              "lat": {"type": "number"},
+              "lon": {"type": "number"}
+            }
+          },
+          "persons": {"type": "array", "items": {"type": "string"}},
+          "links": {"type": "array", "items": {"type": "string"}},
+          "description": {"type": "string"}
+        }
+      }
+    }
+  }
+}

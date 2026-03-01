@@ -1,0 +1,86 @@
+name,kind,lat,lon,radius_km,aliases
+Deutschland,country,51.1657,10.4515,400,Germany|DE
+Österreich,country,47.5162,14.5501,250,Austria|AT
+Schweiz,country,46.8182,8.2275,200,Switzerland|CH
+Frankreich,country,46.2276,2.2137,450,France|FR
+Italien,country,41.8719,12.5674,400,Italy|IT
+Spanien,country,40.4637,-3.7492,500,Spain|ES
+Portugal,country,39.3999,-8.2245,250,Portugal|PT
+Niederlande,country,52.1326,5.2913,200,Netherlands|Holland|NL
+Belgien,country,50.5039,4.4699,150,Belgium|BE
+Luxemburg,country,49.8153,6.1296,40,Luxembourg|LU
+Polen,country,51.9194,19.1451,500,Poland|PL
+Tschechien,country,49.8175,15.4730,200,Czechia|Czech Republic|CZ
+Slowakei,country,48.6690,19.6990,200,Slovakia|SK
+Ungarn,country,47.1625,19.5033,250,Hungary|HU
+Rumänien,country,45.9432,24.9668,350,Romania|RO
+Bulgarien,country,42.7339,25.4858,300,Bulgaria|BG
+Griechenland,country,39.0742,21.8243,300,Greece|GR
+Türkei,country,38.9637,35.2433,800,Turkey|TR
+Vereinigtes Königreich,country,55.3781,-3.4360,600,United Kingdom|UK|Great Britain|Britain
+Irland,country,53.1424,-7.6921,150,Ireland|IE
+Norwegen,country,60.4720,8.4689,600,Norway|NO
+Schweden,country,60.1282,18.6435,700,Sweden|SE
+Finnland,country,61.9241,25.7482,450,Finland|FI
+Dänemark,country,56.2639,9.5018,150,Denmark|DK
+Island,country,64.9631,-19.0208,250,Iceland|IS
+Russland,country,61.5240,105.3188,2000,Russia|RU
+Ukraine,country,48.3794,31.1656,700,Ukraine|UA
+Belarus,country,53.7098,27.9534,350,Belarus|BY
+Litauen,country,55.1694,23.8813,200,Lithuania|LT
+Lettland,country,56.8796,24.6032,200,Latvia|LV
+Estland,country,58.5953,25.0136,200,Estonia|EE
+Serbien,country,44.0165,21.0059,250,Serbia|RS
+Kroatien,country,45.1000,15.2000,200,Croatia|HR
+Slowenien,country,46.1512,14.9955,150,Slovenia|SI
+Bosnien und Herzegowina,country,43.9159,17.6791,200,Bosnia|BA
+Albanien,country,41.1533,20.1683,200,Albania|AL
+Nordmazedonien,country,41.6086,21.7453,150,North Macedonia|MK
+Montenegro,country,42.7087,19.3744,120,Montenegro|ME
+Moldau,country,47.4116,28.3699,150,Moldova|MD
+Zypern,country,35.1264,33.4299,80,Cyprus|CY
+Malta,country,35.9375,14.3754,30,Malta|MT
+
+Berlin,city,52.5200,13.4050,25,Berlin
+Hamburg,city,53.5511,9.9937,25,Hamburg
+München,city,48.1351,11.5820,25,Munich
+Köln,city,50.9375,6.9603,20,Cologne
+Frankfurt,city,50.1109,8.6821,20,Frankfurt am Main
+Wien,city,48.2082,16.3738,20,Vienna
+Zürich,city,47.3769,8.5417,15,Zurich
+Genf,city,46.2044,6.1432,15,Geneva
+Paris,city,48.8566,2.3522,25,Paris
+Rom,city,41.9028,12.4964,25,Rome
+Madrid,city,40.4168,-3.7038,25,Madrid
+Lissabon,city,38.7223,-9.1393,20,Lisbon
+Amsterdam,city,52.3676,4.9041,15,Amsterdam
+Brüssel,city,50.8503,4.3517,15,Brussels
+London,city,51.5074,-0.1278,35,London
+Dublin,city,53.3498,-6.2603,15,Dublin
+Oslo,city,59.9139,10.7522,15,Oslo
+Stockholm,city,59.3293,18.0686,15,Stockholm
+Helsinki,city,60.1699,24.9384,15,Helsinki
+Kopenhagen,city,55.6761,12.5683,15,Copenhagen
+Reykjavík,city,64.1466,-21.9426,20,Reykjavik
+Moskau,city,55.7558,37.6173,30,Moscow
+Kiew,city,50.4501,30.5234,25,Kyiv|Kiev
+Warschau,city,52.2297,21.0122,20,Warsaw
+Prag,city,50.0755,14.4378,15,Prague
+Budapest,city,47.4979,19.0402,15,Budapest
+Bukarest,city,44.4268,26.1025,20,Bucharest
+Athen,city,37.9838,23.7275,20,Athens
+Ankara,city,39.9334,32.8597,25,Ankara
+Istanbul,city,41.0082,28.9784,35,İstanbul|Istanbul
+Nürnberg,city,49.4521,11.0767,15,Nuernberg
+Regensburg,city,49.0134,12.1016,12,Regensburg
+Erfurt,city,50.9848,11.0299,12,Erfurt
+Münster,city,51.9607,7.6261,12,Muenster
+
+Sahara,region,24.0,-13.0,1200,Westsahara|Westsahara
+Westsahara,region,24.0,-13.0,1200,West Sahara
+Bayern,region,48.7904,11.4979,200,Bavaria
+Afrika,region,1.6508,17.6791,3000,Africa
+Europa,region,54.5260,15.2551,2500,Europe
+USA,country,37.0902,-95.7129,2500,United States|United States of America|America
+New York,city,40.7128,-74.0060,30,New York City
+Washington,city,38.9072,-77.0369,20,Washington DC

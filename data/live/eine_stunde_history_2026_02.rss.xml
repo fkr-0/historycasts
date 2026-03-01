@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+  <channel>
+    <title>Eine Stunde History – Deutschlandfunk Nova (Snapshot 2026-02)</title>
+    <link>https://www.deutschlandfunknova.de/podcasts/download/eine-stunde-history</link>
+    <description>Snapshot feed built from podcast.de metadata.</description>
+    <item>
+      <title>Verhinderter Staat - Die Ausrufung der Demokratischen Arabischen Republik Sahara</title>
+      <guid>podcastde:699612289</guid>
+      <pubDate>Fri, 20 Feb 2026 00:00:00 GMT</pubDate>
+      <description><![CDATA[
+Fünf Jahrzehnte nach dem "Grünen Marsch" ist die Westsahara weder eine eigene Nation noch ein Teil Marokkos.
+Manche nennen das Gebiet "die letzte Kolonie Afrikas". Wo steht die Region heute?
+
+Zeitmarker & Mitwirkende (Auszug):
+6:32 - Alfred Hackensberger
+13:35 - Esther Körfgen ("Grüner Marsch" im November 1975)
+Moderation: Markus Dichmann
+Gesprächspartner: Dr. Matthias von Hellfeld
+      ]]></description>
+      <enclosure url="https://podcast-mp3.dradio.de/podcast/2026/02/20/deutschlandfunknova_verhinderter_staat_die_20260220_88a87a82.mp3" length="0" type="audio/mpeg"/>
+      <itunes:duration>00:46:00</itunes:duration>
+    </item>
+  </channel>
+</rss>

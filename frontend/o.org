@@ -1,0 +1,1100 @@
+#+PROPERTY: header-args :tangle yes :mkdirp yes
+
+* Refactor: merged App + modularization
+
+** What this replaces / fixes
+- Removes the accidental *double* default export and the duplicated app logic.
+- Keeps *both* feature sets:
+  - =react-resizable-panels= layout + collapsible left/right + docs modal + links
+  - center tabs (Explore + per-episode)
+  - year-range slider filtering (spans-based)
+  - fulltext search (preview + pinned) + search results panel on the right
+  - table + detail panel on the right
+  - stacked bar timeline + D3 gazetteer map in Explore
+
+** Files
+
+#+begin_src ts :tangle src/state/episodeFiltering.ts
+import type { Dataset } from "../types";
+import type { Filters } from "../urlState";
+
+/**
+ * True iff episode has at least one span overlapping [minYear, maxYear].
+ * This is used for the interval slider filtering.
+ */
+export function hasSpanInYearRange(
+  dataset: Dataset,
+  episodeId: number,
+  yearRange: [number, number],
+): boolean {
+  const [minYear, maxYear] = yearRange;
+
+  for (const s of dataset.spans) {
+    if (s.episode_id !== episodeId) continue;
+    if (!s.start_iso || !s.end_iso) continue;
+
+    const a = new Date(s.start_iso).getUTCFullYear();
+    const b = new Date(s.end_iso).getUTCFullYear();
+    if (Number.isNaN(a) || Number.isNaN(b)) continue;
+
+    const lo = Math.min(a, b);
+    const hi = Math.max(a, b);
+    if (hi >= minYear && lo <= maxYear) return true;
+  }
+  return false;
+}
+
+/**
+ * Compute year bounds from spans for the given episode id set.
+ * Returns null if there are no usable spans.
+ */
+export function spanYearBounds(
+  dataset: Dataset,
+  episodeIds: Set<number>,
+): [number, number] | null {
+  let minYear = Number.POSITIVE_INFINITY;
+  let maxYear = Number.NEGATIVE_INFINITY;
+
+  for (const s of dataset.spans) {
+    if (!episodeIds.has(s.episode_id)) continue;
+    if (!s.start_iso || !s.end_iso) continue;
+
+    const a = new Date(s.start_iso).getUTCFullYear();
+    const b = new Date(s.end_iso).getUTCFullYear();
+    if (Number.isNaN(a) || Number.isNaN(b)) continue;
+
+    minYear = Math.min(minYear, a, b);
+    maxYear = Math.max(maxYear, a, b);
+  }
+
+  if (!Number.isFinite(minYear) || !Number.isFinite(maxYear)) return null;
+  return [Math.floor(minYear), Math.ceil(maxYear)];
+}
+
+/**
+ * Base filtering (podcast/title/kind/narrator/cluster) BEFORE year-range filtering.
+ * This matches the intent of both original App variants.
+ */
+export function filterEpisodesBase(dataset: Dataset, filters: Filters) {
+  const q = filters.q.trim().toLowerCase();
+  const narr = filters.narrator.trim().toLowerCase();
+  const kind = filters.kind;
+  const clusterId = filters.clusterId;
+
+  return dataset.episodes.filter((e) => {
+    if (filters.podcastId !== "all" && e.podcast_id !== filters.podcastId)
+      return false;
+
+    if (q && !e.title.toLowerCase().includes(q)) return false;
+
+    if (kind !== "all" && (e.kind ?? "") !== kind) return false;
+
+    if (narr && !(e.narrator ?? "").toLowerCase().includes(narr))
+      return false;
+
+    if (clusterId != null) {
+      const cid = dataset.episode_clusters[String(e.id)];
+      if (cid !== clusterId) return false;
+    }
+
+    return true;
+  });
+}
+
+/**
+ * Clamp a user-selected year range to available bounds (and enforce min < max).
+ */
+export function clampYearRange(
+  available: [number, number],
+  requestedMin?: number,
+  requestedMax?: number,
+): [number, number] {
+  const [minY, maxY] = available;
+
+  const rawMin = requestedMin ?? minY;
+  const rawMax = requestedMax ?? maxY;
+
+  const clampedMin = Math.max(minY, Math.min(rawMin, maxY - 1));
+  const clampedMax = Math.min(maxY, Math.max(rawMax, clampedMin + 1));
+
+  return [clampedMin, clampedMax];
+}
+
+/**
+ * Apply year-range filtering to already-base-filtered episodes.
+ */
+export function filterEpisodesByYearRange(
+  dataset: Dataset,
+  episodes: Array<{ id: number }>,
+  yearRange: [number, number],
+) {
+  return episodes.filter((e) => hasSpanInYearRange(dataset, e.id, yearRange));
+}
+#+end_src
+
+#+begin_src ts :tangle src/state/tabs.ts
+import type { Dataset } from "../types";
+
+export type CenterTab =
+  | { id: "explore"; title: "Explore" }
+  | { id: `episode-${number}`; title: string; episodeId: number };
+
+export function makeInitialTabs(): CenterTab[] {
+  return [{ id: "explore", title: "Explore" }];
+}
+
+export function tabIdForEpisode(episodeId: number): `episode-${number}` {
+  return `episode-${episodeId}`;
+}
+
+export function ensureEpisodeTab(
+  dataset: Dataset,
+  tabs: CenterTab[],
+  episodeId: number,
+): CenterTab[] {
+  const ep = dataset.episodes.find((e) => e.id === episodeId);
+  if (!ep) return tabs;
+
+  const id = tabIdForEpisode(episodeId);
+  if (tabs.some((t) => t.id === id)) return tabs;
+
+  return [...tabs, { id, title: ep.title, episodeId }];
+}
+
+export function closeTab(
+  tabs: CenterTab[],
+  tabId: CenterTab["id"],
+): CenterTab[] {
+  if (tabId === "explore") return tabs;
+  return tabs.filter((t) => t.id !== tabId);
+}
+
+export function nextActiveTabAfterClose(
+  activeId: CenterTab["id"],
+  closingId: CenterTab["id"],
+): CenterTab["id"] {
+  if (activeId !== closingId) return activeId;
+  return "explore";
+}
+#+end_src
+
+#+begin_src ts :tangle src/app/loadDataset.ts
+import type { Dataset } from "../types";
+
+export async function loadDataset(): Promise<Dataset> {
+  const res = await fetch("/dataset.json", { cache: "no-store" });
+  if (!res.ok) throw new Error(`Failed to load dataset.json: ${res.status}`);
+  return (await res.json()) as Dataset;
+}
+#+end_src
+
+#+begin_src tsx :tangle src/app/useUrlFilters.tsx
+import { useEffect, useState } from "react";
+import {
+  readFiltersFromUrl,
+  writeFiltersToUrl,
+  type Filters,
+} from "../urlState";
+
+export function useUrlFilters() {
+  const [filters, setFilters] = useState<Filters>(() => readFiltersFromUrl());
+
+  useEffect(() => {
+    writeFiltersToUrl(filters);
+  }, [filters]);
+
+  return { filters, setFilters };
+}
+#+end_src
+
+#+begin_src tsx :tangle src/app/useDataset.tsx
+import { useEffect, useState } from "react";
+import type { Dataset } from "../types";
+import { loadDataset } from "./loadDataset";
+
+export function useDataset() {
+  const [dataset, setDataset] = useState<Dataset | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadDataset()
+      .then(setDataset)
+      .catch((e) => setErr(String(e)));
+  }, []);
+
+  return { dataset, err };
+}
+#+end_src
+
+#+begin_src tsx :tangle src/app/useSearch.tsx
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { Dataset } from "../types";
+import {
+  buildSearchIndex,
+  search as runSearch,
+  type SearchHit,
+  type SearchIndex,
+} from "../search/searchIndex";
+
+export type SearchMode = "preview" | "pinned";
+
+export function useSearch(dataset: Dataset | null) {
+  const [query, setQuery] = useState("");
+  const [mode, setMode] = useState<SearchMode>("preview");
+  const [index, setIndex] = useState<SearchIndex | null>(null);
+  const [hits, setHits] = useState<SearchHit[]>([]);
+
+  // Optional: consumers can use this to scroll when pin/select happens.
+  const rightPanelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!dataset) return;
+    setIndex(buildSearchIndex(dataset));
+  }, [dataset]);
+
+  useEffect(() => {
+    if (!index) return;
+
+    const q = query.trim();
+    if (!q) {
+      setHits([]);
+      setMode("preview");
+      return;
+    }
+
+    setHits(runSearch(index, q, 80));
+    setMode((m) => (m === "pinned" ? "pinned" : "preview"));
+  }, [index, query]);
+
+  function clear() {
+    setQuery("");
+    setHits([]);
+    setMode("preview");
+  }
+
+  function pin() {
+    if (!query.trim()) return;
+    setMode("pinned");
+    rightPanelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  return {
+    query,
+    setQuery,
+    mode,
+    hits,
+    clear,
+    pin,
+    rightPanelRef,
+  };
+}
+#+end_src
+
+#+begin_src tsx :tangle src/components/app/HeaderBar.tsx
+import SearchBar from "../SearchBar";
+
+export type HeaderBarProps = {
+  searchValue: string;
+  onSearchChange: (v: string) => void;
+  onSearchEnter: () => void;
+  onSearchClear: () => void;
+
+  leftCollapsed: boolean;
+  rightCollapsed: boolean;
+  onToggleLeft: () => void;
+  onToggleRight: () => void;
+
+  onOpenReadme: () => void;
+  onOpenChangelog: () => void;
+};
+
+export default function HeaderBar(props: HeaderBarProps) {
+  return (
+    <div className="sticky top-0 z-30 -mx-3 -mt-3 mb-3 border-b border-[color:var(--border)] bg-[color:var(--surface)]/90 p-3 backdrop-blur">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="min-w-[260px] flex-1">
+          <SearchBar
+            value={props.searchValue}
+            onChange={props.onSearchChange}
+            onEnter={props.onSearchEnter}
+            onClear={props.onSearchClear}
+          />
+        </div>
+
+        <div className="ml-auto flex items-center gap-2">
+          <a
+            href="https://github.com/example/historycasts"
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface)] px-2 py-1 text-xs"
+          >
+            GH
+          </a>
+          <a
+            href="https://fkr.dev/"
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface)] px-2 py-1 text-xs"
+          >
+            FKR
+          </a>
+          <button
+            type="button"
+            onClick={props.onOpenReadme}
+            className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface)] px-2 py-1 text-xs"
+          >
+            README
+          </button>
+          <button
+            type="button"
+            onClick={props.onOpenChangelog}
+            className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface)] px-2 py-1 text-xs"
+          >
+            CHANGELOG
+          </button>
+          <button
+            type="button"
+            onClick={props.onToggleLeft}
+            className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface)] px-2 py-1 text-xs"
+          >
+            {props.leftCollapsed ? "open filters" : "hide filters"}
+          </button>
+          <button
+            type="button"
+            onClick={props.onToggleRight}
+            className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface)] px-2 py-1 text-xs"
+          >
+            {props.rightCollapsed ? "open details" : "hide details"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+#+end_src
+
+#+begin_src tsx :tangle src/components/app/DocModal.tsx
+export type DocModalKind = "readme" | "changelog";
+
+export default function DocModal(props: {
+  kind: DocModalKind;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div className="relative h-[85vh] w-[min(1100px,96vw)] rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] p-2">
+        <button
+          type="button"
+          onClick={props.onClose}
+          className="absolute right-3 top-3 z-10 rounded-md border border-[color:var(--border)] bg-[color:var(--surface-2)] px-2 py-1 text-xs"
+        >
+          close
+        </button>
+        <iframe
+          title={props.kind}
+          src={`/docs/${props.kind}.html`}
+          className="h-full w-full rounded-lg border border-[color:var(--border)] bg-white"
+        />
+      </div>
+    </div>
+  );
+}
+#+end_src
+
+#+begin_src tsx :tangle src/components/app/FiltersPanel.tsx
+import ClusterPanel from "../ClusterPanel";
+import type { Dataset } from "../../types";
+import type { Filters } from "../../urlState";
+
+export default function FiltersPanel(props: {
+  dataset: Dataset;
+  filters: Filters;
+  onChange: (next: Filters) => void;
+  collapsed: boolean;
+  onUncollapse: () => void;
+  matchingCount: number;
+}) {
+  const { dataset, filters } = props;
+  const podcasts = dataset.podcasts ?? [];
+
+  if (props.collapsed) {
+    return (
+      <button type="button" onClick={props.onUncollapse} className="text-xs">
+        →
+      </button>
+    );
+  }
+
+  return (
+    <>
+      <div className="flex items-center justify-between">
+        <h2 className="m-0 text-xl font-semibold text-[color:var(--text)]">
+          Podcast Explorer
+        </h2>
+      </div>
+      <div className="mt-1 text-xs text-[color:var(--muted)]">
+        schema {dataset.meta.schema_version} · generated{" "}
+        {new Date(dataset.meta.generated_at_iso).toLocaleString()}
+      </div>
+
+      <div className="mt-4 grid gap-3">
+        <label>
+          Podcast
+          <select
+            value={String(filters.podcastId)}
+            onChange={(e) =>
+              props.onChange({
+                ...filters,
+                podcastId: e.target.value === "all" ? "all" : Number(e.target.value),
+              })
+            }
+            className="mt-1 w-full"
+          >
+            <option value="all">All</option>
+            {podcasts.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.title}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          Search title (fast filter)
+          <input
+            value={filters.q}
+            onChange={(e) => props.onChange({ ...filters, q: e.target.value })}
+            className="mt-1 w-full"
+          />
+        </label>
+
+        <label>
+          Kind
+          <select
+            value={filters.kind}
+            onChange={(e) => props.onChange({ ...filters, kind: e.target.value })}
+            className="mt-1 w-full"
+          >
+            <option value="all">All</option>
+            <option value="regular">regular</option>
+            <option value="book">book</option>
+            <option value="meta">meta</option>
+            <option value="special">special</option>
+          </select>
+        </label>
+
+        <label>
+          Narrator contains
+          <input
+            value={filters.narrator}
+            onChange={(e) =>
+              props.onChange({ ...filters, narrator: e.target.value })
+            }
+            className="mt-1 w-full"
+          />
+        </label>
+
+        <label>
+          Timeline spans per episode (top-N)
+          <input
+            type="range"
+            min={1}
+            max={6}
+            value={filters.topN}
+            onChange={(e) =>
+              props.onChange({ ...filters, topN: Number(e.target.value) })
+            }
+            className="mt-1 w-full"
+          />
+          <div className="text-xs text-[color:var(--muted)]">{filters.topN}</div>
+        </label>
+
+        <label>
+          Axis density factor (k)
+          <input
+            type="range"
+            min={0.4}
+            max={2.5}
+            step={0.1}
+            value={filters.axisK}
+            onChange={(e) =>
+              props.onChange({ ...filters, axisK: Number(e.target.value) })
+            }
+            className="mt-1 w-full"
+          />
+          <div className="text-xs text-[color:var(--muted)]">
+            k = {filters.axisK.toFixed(1)}
+          </div>
+        </label>
+
+        <label>
+          Time scrubber year
+          <input
+            type="number"
+            value={filters.year ?? ""}
+            placeholder="e.g. 1776"
+            onChange={(e) =>
+              props.onChange({
+                ...filters,
+                year: e.target.value ? Number(e.target.value) : undefined,
+              })
+            }
+            className="mt-1 w-full"
+          />
+        </label>
+      </div>
+
+      <div className="mt-4">
+        <ClusterPanel
+          dataset={dataset}
+          filters={filters}
+          onSelectCluster={(cid) => props.onChange({ ...filters, clusterId: cid })}
+          onClearCluster={() => props.onChange({ ...filters, clusterId: undefined })}
+        />
+      </div>
+
+      <div className="mt-4 text-xs text-[color:var(--muted)]">
+        Matching episodes: <b>{props.matchingCount}</b>
+      </div>
+    </>
+  );
+}
+#+end_src
+
+#+begin_src tsx :tangle src/components/app/CenterTabs.tsx
+import type { CenterTab } from "../../state/tabs";
+
+export default function CenterTabs(props: {
+  tabs: CenterTab[];
+  activeTabId: CenterTab["id"];
+  onActivate: (id: CenterTab["id"]) => void;
+  onClose: (id: CenterTab["id"]) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)]/65 p-2">
+      {props.tabs.map((tab) => (
+        <div key={tab.id} className="inline-flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => props.onActivate(tab.id)}
+            className={`rounded-lg border px-2 py-1 text-xs ${
+              tab.id === props.activeTabId
+                ? "border-[color:var(--accent)] bg-[color:var(--surface-2)]"
+                : "border-[color:var(--border)] bg-[color:var(--surface)]"
+            }`}
+          >
+            {tab.title}
+          </button>
+
+          {tab.id !== "explore" && (
+            <button
+              type="button"
+              aria-label={`Close ${tab.title} tab`}
+              className="rounded-md border border-[color:var(--border)] px-1 text-[color:var(--muted)]"
+              onClick={() => props.onClose(tab.id)}
+            >
+              ×
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+#+end_src
+
+#+begin_src tsx :tangle src/components/app/ExploreTab.tsx
+import type { Dataset } from "../../types";
+import D3GazetteerMap from "../D3GazetteerMap";
+import GraphIntervalSlider from "../GraphIntervalSlider";
+import { default as StackedBarTimeline } from "../StackedBarTimeline";
+
+export default function ExploreTab(props: {
+  dataset: Dataset;
+  episodes: Dataset["episodes"];
+  selectedEpisodeId: number | null;
+  onSelectEpisode: (id: number) => void;
+
+  scrubYear?: number;
+  onScrubYear: (y?: number) => void;
+
+  availableYearRange: [number, number];
+  activeYearRange: [number, number];
+  sliderSpans: Dataset["spans"];
+
+  axisDensityK: number;
+  topN: number;
+
+  onChangeActiveYearRange: (next: [number, number]) => void;
+}) {
+  return (
+    <div className="flex h-full flex-col gap-3">
+      <div className="min-h-[300px] flex-[0_0_56%] overflow-hidden rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)]/60 p-2">
+        <StackedBarTimeline
+          dataset={props.dataset}
+          episodes={props.episodes}
+          selectedEpisodeId={props.selectedEpisodeId}
+          onSelectEpisode={props.onSelectEpisode}
+          scrubYear={props.scrubYear}
+          onScrubYear={props.onScrubYear}
+          visibleYearRange={props.activeYearRange}
+          axisDensityK={props.axisDensityK}
+        />
+      </div>
+
+      <GraphIntervalSlider
+        spans={props.sliderSpans}
+        minYear={props.availableYearRange[0]}
+        maxYear={props.availableYearRange[1]}
+        value={props.activeYearRange}
+        onChange={props.onChangeActiveYearRange}
+      />
+
+      <div className="min-h-[260px] flex-1 overflow-hidden rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)]/60 p-2">
+        <D3GazetteerMap
+          dataset={props.dataset}
+          episodes={props.episodes}
+          selectedEpisodeId={props.selectedEpisodeId}
+          onSelectEpisode={props.onSelectEpisode}
+          scrubYear={props.scrubYear}
+        />
+      </div>
+    </div>
+  );
+}
+#+end_src
+
+#+begin_src tsx :tangle src/components/app/EpisodeTab.tsx
+import type { Dataset } from "../../types";
+import { default as EpisodeDetail } from "../EpisodeDetail";
+
+export default function EpisodeTab(props: {
+  dataset: Dataset;
+  episodeId: number;
+}) {
+  return (
+    <div className="h-full overflow-auto rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)]/60 p-3">
+      <EpisodeDetail dataset={props.dataset} episodeId={props.episodeId} />
+    </div>
+  );
+}
+#+end_src
+
+#+begin_src tsx :tangle src/components/app/RightPanel.tsx
+import { useCallback } from "react";
+import type { Dataset } from "../../types";
+import EpisodesTable from "../EpisodesTable";
+import SearchResultsPanel from "../SearchResultsPanel";
+import { default as EpisodeDetail } from "../EpisodeDetail";
+import type { SearchHit } from "../../search/searchIndex";
+import type { SearchMode } from "../../app/useSearch";
+
+export default function RightPanel(props: {
+  dataset: Dataset;
+
+  collapsed: boolean;
+  onUncollapse: () => void;
+
+  searchQuery: string;
+  searchHits: SearchHit[];
+  searchMode: SearchMode;
+
+  onSelectEpisode: (episodeId: number) => void;
+  onSelectCluster: (clusterId: number) => void;
+
+  episodes: Dataset["episodes"];
+  selectedEpisodeId: number | null;
+
+  rightPanelRef: React.RefObject<HTMLDivElement>;
+}) {
+  const selectEpisodeFromSearch = useCallback(
+    (episodeId: number) => {
+      props.onSelectEpisode(episodeId);
+      // push details into view (scroll results out)
+      props.rightPanelRef.current?.scrollTo({ top: 500, behavior: "smooth" });
+    },
+    [props],
+  );
+
+  const selectClusterFromSearch = useCallback(
+    (clusterId: number) => {
+      props.onSelectCluster(clusterId);
+      props.rightPanelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    },
+    [props],
+  );
+
+  if (props.collapsed) {
+    return (
+      <button type="button" onClick={props.onUncollapse} className="text-xs">
+        ←
+      </button>
+    );
+  }
+
+  return (
+    <div ref={props.rightPanelRef} className="h-full overflow-auto">
+      <SearchResultsPanel
+        dataset={props.dataset}
+        query={props.searchQuery}
+        hits={props.searchHits}
+        mode={props.searchMode}
+        onSelectEpisode={selectEpisodeFromSearch}
+        onSelectCluster={selectClusterFromSearch}
+      />
+
+      <div className="mt-3">
+        <EpisodesTable
+          dataset={props.dataset}
+          episodes={props.episodes}
+          selectedEpisodeId={props.selectedEpisodeId}
+          onSelectEpisode={props.onSelectEpisode}
+        />
+      </div>
+
+      <div className="mt-3 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)]/60 p-3">
+        <EpisodeDetail dataset={props.dataset} episodeId={props.selectedEpisodeId} />
+      </div>
+    </div>
+  );
+}
+#+end_src
+
+#+begin_src tsx :tangle src/components/app/AppFrame.tsx
+import { Group, Panel, Separator } from "react-resizable-panels";
+
+export default function AppFrame(props: {
+  left: React.ReactNode;
+  center: React.ReactNode;
+  right: React.ReactNode;
+}) {
+  return (
+    <div className="h-screen">
+      <Group direction="horizontal">
+        <Panel
+          defaultSize={22}
+          minSize={15}
+          maxSize={38}
+          className="overflow-auto border-r border-[color:var(--border)] bg-[color:var(--surface)]/92 p-3"
+          style={{ transition: "flex-grow 220ms ease, flex-basis 220ms ease" }}
+        >
+          {props.left}
+        </Panel>
+
+        <Separator className="w-1 bg-[color:var(--border)] transition-colors hover:bg-[color:var(--accent)]" />
+
+        <Panel defaultSize={53} minSize={34} className="overflow-hidden p-3 md:p-4">
+          {props.center}
+        </Panel>
+
+        <Separator className="w-1 bg-[color:var(--border)] transition-colors hover:bg-[color:var(--accent)]" />
+
+        <Panel
+          defaultSize={25}
+          minSize={16}
+          maxSize={40}
+          className="overflow-hidden border-l border-[color:var(--border)] bg-[color:var(--surface)]/92 p-4"
+          style={{ transition: "flex-grow 220ms ease, flex-basis 220ms ease" }}
+        >
+          {props.right}
+        </Panel>
+      </Group>
+    </div>
+  );
+}
+#+end_src
+
+#+begin_src tsx :tangle src/App.tsx
+import { useMemo, useState } from "react";
+import type { Dataset } from "./types";
+
+import AppFrame from "./components/app/AppFrame";
+import HeaderBar from "./components/app/HeaderBar";
+import DocModal, { type DocModalKind } from "./components/app/DocModal";
+import FiltersPanel from "./components/app/FiltersPanel";
+import CenterTabs from "./components/app/CenterTabs";
+import ExploreTab from "./components/app/ExploreTab";
+import EpisodeTab from "./components/app/EpisodeTab";
+import RightPanel from "./components/app/RightPanel";
+
+import { useDataset } from "./app/useDataset";
+import { useUrlFilters } from "./app/useUrlFilters";
+import { useSearch } from "./app/useSearch";
+
+import {
+  clampYearRange,
+  filterEpisodesBase,
+  filterEpisodesByYearRange,
+  spanYearBounds,
+} from "./state/episodeFiltering";
+
+import {
+  closeTab,
+  ensureEpisodeTab,
+  makeInitialTabs,
+  nextActiveTabAfterClose,
+  type CenterTab,
+} from "./state/tabs";
+
+export default function App(): JSX.Element {
+  const { dataset, err } = useDataset();
+  const { filters, setFilters } = useUrlFilters();
+  const search = useSearch(dataset);
+
+  const [selectedEpisodeId, setSelectedEpisodeId] = useState<number | null>(null);
+  const [tabs, setTabs] = useState<CenterTab[]>(() => makeInitialTabs());
+  const [activeTabId, setActiveTabId] = useState<CenterTab["id"]>("explore");
+
+  const [leftCollapsed, setLeftCollapsed] = useState(false);
+  const [rightCollapsed, setRightCollapsed] = useState(false);
+  const [docModal, setDocModal] = useState<DocModalKind | null>(null);
+
+  if (err) return <div className="p-4">Error: {err}</div>;
+  if (!dataset) return <div className="p-4">Loading dataset…</div>;
+
+  const episodesBase = useMemo(() => filterEpisodesBase(dataset, filters), [dataset, filters]);
+
+  const availableYearRange = useMemo<[number, number]>(() => {
+    const ids = new Set(episodesBase.map((e) => e.id));
+    const bounds = spanYearBounds(dataset, ids);
+    return bounds ?? [-500, new Date().getUTCFullYear()];
+  }, [dataset, episodesBase]);
+
+  const activeYearRange = useMemo<[number, number]>(() => {
+    return clampYearRange(availableYearRange, filters.yearMin, filters.yearMax);
+  }, [availableYearRange, filters.yearMin, filters.yearMax]);
+
+  const filteredEpisodes = useMemo(() => {
+    return filterEpisodesByYearRange(dataset, episodesBase, activeYearRange);
+  }, [dataset, episodesBase, activeYearRange]);
+
+  const baseEpisodeIdSet = useMemo(() => new Set(episodesBase.map((e) => e.id)), [episodesBase]);
+
+  const sliderSpans = useMemo(() => {
+    return dataset.spans.filter((s) => baseEpisodeIdSet.has(s.episode_id));
+  }, [dataset, baseEpisodeIdSet]);
+
+  function openEpisodeTab(episodeId: number) {
+    setSelectedEpisodeId(episodeId);
+    setTabs((prev) => ensureEpisodeTab(dataset, prev, episodeId));
+    setActiveTabId(`episode-${episodeId}`);
+  }
+
+  function handleCloseTab(tabId: CenterTab["id"]) {
+    setTabs((prev) => closeTab(prev, tabId));
+    setActiveTabId((active) => nextActiveTabAfterClose(active, tabId));
+  }
+
+  const activeTab = tabs.find((t) => t.id === activeTabId) ?? tabs[0];
+
+  return (
+    <>
+      <AppFrame
+        left={
+          <FiltersPanel
+            dataset={dataset}
+            filters={filters}
+            onChange={setFilters}
+            collapsed={leftCollapsed}
+            onUncollapse={() => setLeftCollapsed(false)}
+            matchingCount={filteredEpisodes.length}
+          />
+        }
+        center={
+          <div className="flex h-full flex-col gap-3">
+            <HeaderBar
+              searchValue={search.query}
+              onSearchChange={search.setQuery}
+              onSearchEnter={search.pin}
+              onSearchClear={search.clear}
+              leftCollapsed={leftCollapsed}
+              rightCollapsed={rightCollapsed}
+              onToggleLeft={() => setLeftCollapsed((v) => !v)}
+              onToggleRight={() => setRightCollapsed((v) => !v)}
+              onOpenReadme={() => setDocModal("readme")}
+              onOpenChangelog={() => setDocModal("changelog")}
+            />
+
+            <CenterTabs
+              tabs={tabs}
+              activeTabId={activeTabId}
+              onActivate={(id) => {
+                setActiveTabId(id);
+                if (id.startsWith("episode-")) {
+                  const epId = Number(id.slice("episode-".length));
+                  if (Number.isFinite(epId)) setSelectedEpisodeId(epId);
+                }
+              }}
+              onClose={handleCloseTab}
+            />
+
+            <div className="min-h-0 flex-1">
+              {activeTab.id === "explore" ? (
+                <ExploreTab
+                  dataset={dataset}
+                  episodes={filteredEpisodes}
+                  selectedEpisodeId={selectedEpisodeId}
+                  onSelectEpisode={openEpisodeTab}
+                  scrubYear={filters.year}
+                  onScrubYear={(y) => setFilters((f) => ({ ...f, year: y }))}
+                  availableYearRange={availableYearRange}
+                  activeYearRange={activeYearRange}
+                  sliderSpans={sliderSpans}
+                  axisDensityK={filters.axisK}
+                  topN={filters.topN}
+                  onChangeActiveYearRange={(next) =>
+                    setFilters((f) => ({ ...f, yearMin: next[0], yearMax: next[1] }))
+                  }
+                />
+              ) : (
+                <>
+                  {"episodeId" in activeTab ? (
+                    <EpisodeTab dataset={dataset} episodeId={activeTab.episodeId} />
+                  ) : null}
+                </>
+              )}
+            </div>
+          </div>
+        }
+        right={
+          <RightPanel
+            dataset={dataset}
+            collapsed={rightCollapsed}
+            onUncollapse={() => setRightCollapsed(false)}
+            searchQuery={search.query}
+            searchHits={search.hits}
+            searchMode={search.mode}
+            onSelectEpisode={openEpisodeTab}
+            onSelectCluster={(clusterId) => setFilters((f) => ({ ...f, clusterId }))}
+            episodes={filteredEpisodes}
+            selectedEpisodeId={selectedEpisodeId}
+            rightPanelRef={search.rightPanelRef}
+          />
+        }
+      />
+
+      {docModal && <DocModal kind={docModal} onClose={() => setDocModal(null)} />}
+    </>
+  );
+}
+#+end_src
+
+** Tests (pure logic first)
+
+#+begin_src ts :tangle src/state/episodeFiltering.test.ts
+import { describe, expect, test } from "vitest";
+import type { Dataset } from "../types";
+import {
+  clampYearRange,
+  filterEpisodesBase,
+  filterEpisodesByYearRange,
+  hasSpanInYearRange,
+  spanYearBounds,
+} from "./episodeFiltering";
+
+function makeDataset(): Dataset {
+  return {
+    meta: { schema_version: "x", generated_at_iso: new Date().toISOString() },
+    podcasts: [{ id: 1, title: "P1" }],
+    episodes: [
+      { id: 10, podcast_id: 1, title: "Hello Rome", kind: "regular", narrator: "A" },
+      { id: 11, podcast_id: 1, title: "Bye Paris", kind: "book", narrator: "B" },
+    ],
+    spans: [
+      { episode_id: 10, start_iso: "0100-01-01T00:00:00Z", end_iso: "0200-01-01T00:00:00Z" },
+      { episode_id: 11, start_iso: "1500-01-01T00:00:00Z", end_iso: "1600-01-01T00:00:00Z" },
+    ],
+    // @ts-expect-error: minimal fixture shape; real app has full mapping
+    episode_clusters: { "10": 1, "11": 2 },
+  };
+}
+
+describe("episodeFiltering", () => {
+  test("hasSpanInYearRange detects overlap", () => {
+    const ds = makeDataset();
+    expect(hasSpanInYearRange(ds, 10, [50, 150])).toBe(true);
+    expect(hasSpanInYearRange(ds, 10, [201, 300])).toBe(false);
+  });
+
+  test("spanYearBounds returns min/max across selected episodes", () => {
+    const ds = makeDataset();
+    const bounds = spanYearBounds(ds, new Set([10, 11]));
+    expect(bounds).toEqual([100, 1600]);
+  });
+
+  test("clampYearRange enforces bounds and min<max", () => {
+    expect(clampYearRange([0, 10], -5, 99)).toEqual([0, 10]);
+    expect(clampYearRange([0, 10], 9, 9)).toEqual([9, 10]);
+  });
+
+  test("filterEpisodesBase applies title/kind/narrator/podcast filters", () => {
+    const ds = makeDataset();
+
+    const filters = {
+      podcastId: "all" as const,
+      q: "rome",
+      kind: "all" as const,
+      narrator: "",
+      topN: 3,
+      axisK: 1.0,
+      year: undefined as number | undefined,
+      yearMin: undefined as number | undefined,
+      yearMax: undefined as number | undefined,
+      clusterId: undefined as number | undefined,
+    };
+
+    const res = filterEpisodesBase(ds, filters);
+    expect(res.map((e) => e.id)).toEqual([10]);
+  });
+
+  test("filterEpisodesByYearRange keeps only episodes overlapping active range", () => {
+    const ds = makeDataset();
+    const base = ds.episodes;
+    const res = filterEpisodesByYearRange(ds, base, [1400, 1700]);
+    expect(res.map((e) => e.id)).toEqual([11]);
+  });
+});
+#+end_src
+
+#+begin_src ts :tangle src/state/tabs.test.ts
+import { describe, expect, test } from "vitest";
+import type { Dataset } from "../types";
+import {
+  closeTab,
+  ensureEpisodeTab,
+  makeInitialTabs,
+  nextActiveTabAfterClose,
+} from "./tabs";
+
+function makeDataset(): Dataset {
+  return {
+    meta: { schema_version: "x", generated_at_iso: new Date().toISOString() },
+    podcasts: [],
+    episodes: [{ id: 1, podcast_id: 1, title: "Ep1" }],
+    spans: [],
+    // @ts-expect-error minimal fixture
+    episode_clusters: {},
+  };
+}
+
+describe("tabs", () => {
+  test("ensureEpisodeTab adds a new tab once", () => {
+    const ds = makeDataset();
+    const t0 = makeInitialTabs();
+    const t1 = ensureEpisodeTab(ds, t0, 1);
+    const t2 = ensureEpisodeTab(ds, t1, 1);
+    expect(t1.length).toBe(2);
+    expect(t2.length).toBe(2);
+  });
+
+  test("closeTab does not close explore", () => {
+    const t0 = makeInitialTabs();
+    expect(closeTab(t0, "explore")).toEqual(t0);
+  });
+
+  test("nextActiveTabAfterClose falls back to explore", () => {
+    expect(nextActiveTabAfterClose("episode-1", "episode-1")).toBe("explore");
+    expect(nextActiveTabAfterClose("episode-1", "episode-2")).toBe("episode-1");
+  });
+});
+#+end_src

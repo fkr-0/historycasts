@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+  <channel>
+    <title>Deutschlandfunk Nova – Eine Stunde History (Fixture)</title>
+    <link>https://example.invalid/eine-stunde-history</link>
+    <description>Fixture feed used for offline tests.</description>
+    <item>
+      <title>Rom 44 v. Chr.: Caesar und das Attentat</title>
+      <guid>esh-001</guid>
+      <pubDate>Wed, 08 Nov 2023 06:00:00 GMT</pubDate>
+      <description><![CDATA[
+        Ort: Rom. Zeit: 44 v. Chr. Personen: Julius Caesar, Marcus Junius Brutus.
+        Thema: Politik, Attentat.
+      ]]></description>
+      <enclosure url="https://cdn.example.invalid/esh-001.mp3" length="111" type="audio/mpeg"/>
+      <itunes:duration>00:59:59</itunes:duration>
+    </item>
+    <item>
+      <title>Hamburg 1962: Sturmflut, Katastrophe und Krisenmanagement</title>
+      <guid>esh-002</guid>
+      <pubDate>Wed, 15 Nov 2023 06:00:00 GMT</pubDate>
+      <description><![CDATA[
+        Hamburg, 1962. Thema: Katastrophe (Sturmflut). Personen: Helmut Schmidt.
+      ]]></description>
+      <enclosure url="https://cdn.example.invalid/esh-002.mp3" length="222" type="audio/mpeg"/>
+      <itunes:duration>01:01:30</itunes:duration>
+    </item>
+    <item>
+      <title>Kairo 2011: Arabischer Frühling und Proteste</title>
+      <guid>esh-003</guid>
+      <pubDate>Wed, 22 Nov 2023 06:00:00 GMT</pubDate>
+      <description><![CDATA[
+        Kairo 2011: Proteste, Revolution, soziale Bewegungen.
+        Personen: Mohamed ElBaradei.
+      ]]></description>
+      <enclosure url="https://cdn.example.invalid/esh-003.mp3" length="333" type="audio/mpeg"/>
+      <itunes:duration>00:53:10</itunes:duration>
+    </item>
+  </channel>
+</rss>

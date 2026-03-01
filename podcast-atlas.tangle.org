@@ -1,0 +1,2243 @@
+#+title: Podcast Atlas (tangle bundle)
+#+PROPERTY: header-args :tangle yes :mkdirp yes
+
+* Notes
+- This bundle includes all text sources. The sample SQLite DB is shipped in the .tgz archive (data/podcast_atlas.sqlite).
+
+* README.org
+#+begin_src org :tangle README.org
+#+title: Podcast Atlas
+
+A small, *agent-friendly* pipeline to:
+- ingest podcast RSS feeds into SQLite
+- extract context from titles + descriptions (time, place, persons, incident type, links)
+- explore episodes via a web UI with:
+  - a two-sided time-range slider
+  - a timeline plot
+  - a map view that filters by the current map bounds
+  - preset filters + text search
+
+* What’s inside
+- =src/podcast_atlas/= Python package
+  - =ingest.py= RSS -> SQLite + extraction
+  - =extract.py= heuristic context extraction
+  - =api.py= FastAPI read API
+  - =cli.py= convenience commands
+- =data/podcast_atlas.sqlite= sample DB built from offline fixture feeds
+- =web/= Vite+React frontend
+
+* Quickstart (offline demo)
+#+begin_src sh
+# from repo root
+PYTHONPATH=src python -m podcast_atlas.cli build-sample --db data/podcast_atlas.sqlite
+PYTHONPATH=src python -m podcast_atlas.cli serve --db data/podcast_atlas.sqlite --host 127.0.0.1 --port 8000
+#+end_src
+
+In another terminal:
+#+begin_src sh
+cd web
+npm install
+npm run dev
+#+end_src
+
+Then open the Vite URL (usually http://127.0.0.1:5173).
+
+* Ingesting real feeds
+This environment cannot fetch the live RSS feeds (no outbound network here), so the repository ships *fixture feeds* under =tests/fixtures/=.
+
+On your machine with internet access, you can ingest a real RSS XML file like:
+#+begin_src sh
+podcast-atlas ingest \
+  --db data/podcast_atlas.sqlite \
+  --podcast-id drig \
+  --feed-url 'https://…actual-feed-url…' \
+  --rss-file /path/to/downloaded.rss.xml \
+  --overrides data/manual_overrides.yml
+#+end_src
+
+* Manual review workflow
+- Put curated corrections in =data/manual_overrides.yml= keyed by episode GUID.
+- Re-run ingest; it is idempotent (UPSERT by GUID).
+
+* Development
+#+begin_src sh
+PYTHONPATH=src pytest
+#+end_src
+#+end_src
+
+* data/gazetteer.csv
+#+begin_src text :tangle data/gazetteer.csv
+name,kind,country,lat,lon,aliases
+Berlin,city,DE,52.5200,13.4050,
+Verdun,city,FR,49.1590,5.3860,
+Paris,city,FR,48.8566,2.3522,
+Rom,city,IT,41.9028,12.4964,Rome
+Hamburg,city,DE,53.5511,9.9937,
+Kairo,city,EG,30.0444,31.2357,Cairo
+#+end_src
+
+* data/manual_overrides.yml
+#+begin_src yaml :tangle data/manual_overrides.yml
+# Manual curation overrides (fixture demo)
+# Keys are episode GUIDs.
+
+esh-001:
+  incident_type: assassination
+  primary_time:
+    kind: point
+    year: -44
+  primary_location:
+    name: Rom
+  persons:
+    - Julius Caesar
+    - Marcus Junius Brutus
+
+esh-002:
+  incident_type: disaster
+  primary_time:
+    kind: point
+    year: 1962
+  primary_location:
+    name: Hamburg
+  persons:
+    - Helmut Schmidt
+
+esh-003:
+  incident_type: revolution
+  primary_time:
+    kind: point
+    year: 2011
+  primary_location:
+    name: Kairo
+  persons:
+    - Mohamed ElBaradei
+
+# For DRIG fixtures
+
+drig-001:
+  incident_type: political_change
+  primary_time:
+    kind: point
+    year: 1989
+  primary_location:
+    name: Berlin
+  persons:
+    - Otto von Bismarck
+    - Helmut Kohl
+
+drig-002:
+  incident_type: battle
+  primary_time:
+    kind: point
+    year: 1916
+  primary_location:
+    name: Verdun
+  persons:
+    - Philippe Pétain
+
+drig-003:
+  incident_type: revolution
+  primary_time:
+    kind: point
+    year: 1789
+  primary_location:
+    name: Paris
+  persons:
+    - Maximilien Robespierre
+#+end_src
+
+* data/manual_review.md
+#+begin_src text :tangle data/manual_review.md
+# Manual review sheet (sample fixtures)
+
+This file is generated from the SQLite DB. For real feeds, re-run ingestion then regenerate.
+
+## drig-001 — Berlin 1989: Mauerfall und die Menschen
+
+- podcast: drig
+- published_at: 2023-11-06T10:00:00+00:00
+- incident_type: political_change
+- primary_time: point 1989
+- primary_location: Berlin (DE) [52.52,13.405]
+- persons: Otto von Bismarck, Helmut Kohl
+- links: https://example.invalid/ref
+
+## esh-001 — Rom 44 v. Chr.: Caesar und das Attentat
+
+- podcast: esh
+- published_at: 2023-11-08T06:00:00+00:00
+- incident_type: assassination
+- primary_time: point -44
+- primary_location: Rom (IT) [41.9028,12.4964]
+- persons: Julius Caesar, Marcus Junius Brutus
+- links: —
+
+## drig-002 — Schlacht um Verdun 1916 – Krieg im Westen
+
+- podcast: drig
+- published_at: 2023-11-13T10:00:00+00:00
+- incident_type: battle
+- primary_time: point 1916
+- primary_location: Verdun (FR) [49.159,5.386]
+- persons: Philippe Pétain
+- links: —
+
+## esh-002 — Hamburg 1962: Sturmflut, Katastrophe und Krisenmanagement
+
+- podcast: esh
+- published_at: 2023-11-15T06:00:00+00:00
+- incident_type: disaster
+- primary_time: point 1962
+- primary_location: Hamburg (DE) [53.5511,9.9937]
+- persons: Helmut Schmidt
+- links: —
+
+## drig-003 — Paris 1789: Beginn der Französischen Revolution
+
+- podcast: drig
+- published_at: 2023-11-20T10:00:00+00:00
+- incident_type: revolution
+- primary_time: point 1789
+- primary_location: Paris (FR) [48.8566,2.3522]
+- persons: Maximilien Robespierre
+- links: —
+
+## esh-003 — Kairo 2011: Arabischer Frühling und Proteste
+
+- podcast: esh
+- published_at: 2023-11-22T06:00:00+00:00
+- incident_type: revolution
+- primary_time: point 2011
+- primary_location: Kairo (EG) [30.0444,31.2357]
+- persons: Mohamed ElBaradei
+- links: —
+#+end_src
+
+* pyproject.toml
+#+begin_src toml :tangle pyproject.toml
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "podcast-atlas"
+version = "0.1.0"
+description = "Podcast RSS ingestion + context extraction + map/timeline exploration UI"
+readme = "README.org"
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi>=0.100",
+  "uvicorn>=0.20",
+  "pydantic>=2",
+  "python-dateutil>=2.8",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7",
+  "jsonschema>=4",
+  "httpx>=0.24",
+]
+
+[project.scripts]
+podcast-atlas = "podcast_atlas.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+#+end_src
+
+* schemas/api_episodes.schema.json
+#+begin_src json :tangle schemas/api_episodes.schema.json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "API Episodes Response",
+  "type": "object",
+  "required": ["episodes", "count"],
+  "properties": {
+    "count": {"type": "integer", "minimum": 0},
+    "episodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "podcast_id",
+          "guid",
+          "title",
+          "published_at",
+          "incident_type",
+          "primary_time",
+          "persons",
+          "links",
+          "description"
+        ],
+        "properties": {
+          "podcast_id": {"type": "string"},
+          "guid": {"type": "string"},
+          "title": {"type": "string"},
+          "published_at": {"type": "string"},
+          "audio_url": {"type": ["string", "null"]},
+          "duration_seconds": {"type": ["integer", "null"]},
+          "incident_type": {"type": "string"},
+          "primary_time": {
+            "type": "object",
+            "required": ["kind"],
+            "properties": {
+              "kind": {"type": "string"},
+              "year": {"type": ["integer", "null"]},
+              "start_year": {"type": ["integer", "null"]},
+              "end_year": {"type": ["integer", "null"]}
+            }
+          },
+          "primary_location": {
+            "type": ["object", "null"],
+            "required": ["name", "lat", "lon"],
+            "properties": {
+              "name": {"type": "string"},
+              "country": {"type": ["string", "null"]},
+              "lat": {"type": "number"},
+              "lon": {"type": "number"}
+            }
+          },
+          "persons": {"type": "array", "items": {"type": "string"}},
+          "links": {"type": "array", "items": {"type": "string"}},
+          "description": {"type": "string"}
+        }
+      }
+    }
+  }
+}
+#+end_src
+
+* scripts/export_review.py
+#+begin_src python :tangle scripts/export_review.py
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+from podcast_atlas.db import Database
+
+
+def main() -> int:
+    db_path = Path('data/podcast_atlas.sqlite')
+    db = Database(db_path)
+    eps = db.list_episodes()
+
+    lines = []
+    lines.append('# Manual review sheet (sample fixtures)')
+    lines.append('')
+    lines.append('This file is generated from the SQLite DB. For real feeds, re-run ingestion then regenerate.')
+    lines.append('')
+
+    for e in eps:
+        persons = json.loads(e.get('persons_json') or '[]')
+        links = json.loads(e.get('links_json') or '[]')
+        lines.append(f"## {e['guid']} — {e['title']}")
+        lines.append('')
+        lines.append(f"- podcast: {e['podcast_id']}")
+        lines.append(f"- published_at: {e['published_at']}")
+        lines.append(f"- incident_type: {e.get('incident_type')}")
+        lines.append(f"- primary_time: {e.get('primary_time_kind')} {e.get('primary_time_year') or ''}{(' ' + str(e.get('primary_time_start_year')) + '-' + str(e.get('primary_time_end_year'))) if e.get('primary_time_kind')=='range' else ''}")
+        lines.append(f"- primary_location: {e.get('primary_location_name')} ({e.get('primary_location_country')}) [{e.get('primary_location_lat')},{e.get('primary_location_lon')}]" if e.get('primary_location_name') else "- primary_location: —")
+        lines.append(f"- persons: {', '.join(persons) if persons else '—'}")
+        lines.append(f"- links: {', '.join(links) if links else '—'}")
+        lines.append('')
+
+    Path('data').mkdir(exist_ok=True)
+    Path('data/manual_review.md').write_text('\n'.join(lines) + '\n', encoding='utf-8')
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())
+#+end_src
+
+* src/podcast_atlas/__init__.py
+#+begin_src python :tangle src/podcast_atlas/__init__.py
+"""Podcast Atlas: ingest RSS, extract context, explore via timeline + map."""
+
+__all__ = ["__version__"]
+__version__ = "0.1.0"
+#+end_src
+
+* src/podcast_atlas/api.py
+#+begin_src python :tangle src/podcast_atlas/api.py
+from __future__ import annotations
+
+import json
+from datetime import date, datetime
+from pathlib import Path
+from typing import Any, Dict, Optional, Tuple
+
+from fastapi import FastAPI, Query
+from fastapi.middleware.cors import CORSMiddleware
+
+from .db import Database
+
+
+def _parse_date(s: Optional[str]) -> Optional[date]:
+    if not s:
+        return None
+    return date.fromisoformat(s)
+
+
+def _parse_bbox(s: Optional[str]) -> Optional[Tuple[float, float, float, float]]:
+    if not s:
+        return None
+    parts = [p.strip() for p in s.split(',')]
+    if len(parts) != 4:
+        raise ValueError('bbox must be minLon,minLat,maxLon,maxLat')
+    min_lon, min_lat, max_lon, max_lat = (float(x) for x in parts)
+    return (min_lon, min_lat, max_lon, max_lat)
+
+
+def _episode_out(r: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        'podcast_id': r['podcast_id'],
+        'guid': r['guid'],
+        'title': r['title'],
+        'published_at': r['published_at'],
+        'audio_url': r.get('audio_url'),
+        'duration_seconds': r.get('duration_seconds'),
+        'incident_type': r.get('incident_type') or 'other',
+        'primary_time': {
+            'kind': r.get('primary_time_kind') or 'unknown',
+            'year': r.get('primary_time_year'),
+            'start_year': r.get('primary_time_start_year'),
+            'end_year': r.get('primary_time_end_year'),
+        },
+        'primary_location': (
+            {
+                'name': r.get('primary_location_name'),
+                'country': r.get('primary_location_country'),
+                'lat': r.get('primary_location_lat'),
+                'lon': r.get('primary_location_lon'),
+            }
+            if r.get('primary_location_lat') is not None and r.get('primary_location_lon') is not None
+            else None
+        ),
+        'persons': json.loads(r.get('persons_json') or '[]'),
+        'links': json.loads(r.get('links_json') or '[]'),
+        'description': r.get('description', ''),
+    }
+
+
+def create_app(db_path: Path) -> FastAPI:
+    db = Database(Path(db_path))
+
+    app = FastAPI(title='Podcast Atlas API', version='0.1.0')
+
+    # Local dev convenience
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=['*'],
+        allow_credentials=True,
+        allow_methods=['*'],
+        allow_headers=['*'],
+    )
+
+    @app.get('/api/podcasts')
+    def list_podcasts() -> Dict[str, Any]:
+        return {'podcasts': db.list_podcasts()}
+
+    @app.get('/api/episodes')
+    def list_episodes(
+        podcast_id: Optional[str] = None,
+        q: Optional[str] = None,
+        date_start: Optional[str] = None,
+        date_end: Optional[str] = None,
+        incident_type: Optional[str] = None,
+        bbox: Optional[str] = None,
+        limit: int = 2000,
+    ) -> Dict[str, Any]:
+        ds = _parse_date(date_start)
+        de = _parse_date(date_end)
+        bb = _parse_bbox(bbox) if bbox else None
+        rows = db.query_episodes(
+            podcast_id=podcast_id,
+            q=q,
+            date_start=ds,
+            date_end=de,
+            incident_type=incident_type,
+            bbox=bb,
+            limit=limit,
+        )
+        eps = [_episode_out(r) for r in rows]
+        return {'episodes': eps, 'count': len(eps)}
+
+    @app.get('/api/meta')
+    def meta() -> Dict[str, Any]:
+        rows = db.list_episodes()
+        dates = [datetime.fromisoformat(r['published_at']).date() for r in rows]
+        if dates:
+            min_date = min(dates).isoformat()
+            max_date = max(dates).isoformat()
+        else:
+            min_date = None
+            max_date = None
+        incident_types = sorted({(r.get('incident_type') or 'other') for r in rows})
+        podcasts = db.list_podcasts()
+        return {
+            'min_date': min_date,
+            'max_date': max_date,
+            'incident_types': incident_types,
+            'podcasts': podcasts,
+        }
+
+    return app
+#+end_src
+
+* src/podcast_atlas/cli.py
+#+begin_src python :tangle src/podcast_atlas/cli.py
+from __future__ import annotations
+
+import argparse
+from pathlib import Path
+
+import uvicorn
+
+from .api import create_app
+from .db import Database
+from .ingest import ingest_rss_file
+
+
+def build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog='podcast-atlas')
+    sub = p.add_subparsers(dest='cmd', required=True)
+
+    p_ing = sub.add_parser('ingest', help='Ingest an RSS feed from a local XML file into sqlite')
+    p_ing.add_argument('--db', required=True, help='SQLite DB path')
+    p_ing.add_argument('--podcast-id', required=True, help='Short id for the podcast, e.g. drig')
+    p_ing.add_argument('--feed-url', required=True, help='Feed URL (or a label like fixture:drig)')
+    p_ing.add_argument('--rss-file', required=True, help='Path to RSS XML file')
+    p_ing.add_argument('--overrides', default='data/manual_overrides.yml', help='Manual overrides YAML')
+
+    p_srv = sub.add_parser('serve', help='Run FastAPI server')
+    p_srv.add_argument('--db', required=True, help='SQLite DB path')
+    p_srv.add_argument('--host', default='127.0.0.1')
+    p_srv.add_argument('--port', default=8000, type=int)
+
+    p_build = sub.add_parser('build-sample', help='Build sample DB from fixtures (offline demo)')
+    p_build.add_argument('--db', default='data/podcast_atlas.sqlite', help='Output sqlite path')
+
+    return p
+
+
+def cmd_ingest(ns: argparse.Namespace) -> int:
+    db = Database.create(Path(ns.db))
+    ingest_rss_file(
+        db,
+        rss_path=Path(ns.rss_file),
+        podcast_id=ns.podcast_id,
+        feed_url=ns.feed_url,
+        overrides_path=Path(ns.overrides) if ns.overrides else None,
+    )
+    return 0
+
+
+def cmd_serve(ns: argparse.Namespace) -> int:
+    app = create_app(Path(ns.db))
+    uvicorn.run(app, host=ns.host, port=int(ns.port), log_level='info')
+    return 0
+
+
+def cmd_build_sample(ns: argparse.Namespace) -> int:
+    out = Path(ns.db)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    db = Database.create(out)
+
+    ingest_rss_file(
+        db,
+        rss_path=Path('tests/fixtures/der_rest_ist_geschichte.rss.xml'),
+        podcast_id='drig',
+        feed_url='fixture:drig',
+        overrides_path=Path('data/manual_overrides.yml'),
+    )
+    ingest_rss_file(
+        db,
+        rss_path=Path('tests/fixtures/eine_stunde_history.rss.xml'),
+        podcast_id='esh',
+        feed_url='fixture:esh',
+        overrides_path=Path('data/manual_overrides.yml'),
+    )
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    p = build_parser()
+    ns = p.parse_args(argv)
+
+    if ns.cmd == 'ingest':
+        return cmd_ingest(ns)
+    if ns.cmd == 'serve':
+        return cmd_serve(ns)
+    if ns.cmd == 'build-sample':
+        return cmd_build_sample(ns)
+
+    raise SystemExit(2)
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())
+#+end_src
+
+* src/podcast_atlas/db.py
+#+begin_src python :tangle src/podcast_atlas/db.py
+from __future__ import annotations
+
+import json
+import sqlite3
+from contextlib import contextmanager
+from dataclasses import dataclass
+from datetime import date, datetime
+from pathlib import Path
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence, Tuple
+
+
+def _dt_to_iso(dt: datetime) -> str:
+    # store as ISO date-time with timezone if present
+    return dt.astimezone().isoformat()
+
+
+def _iso_to_dt(s: str) -> datetime:
+    return datetime.fromisoformat(s)
+
+
+@dataclass
+class Database:
+    path: Path
+
+    @classmethod
+    def create(cls, path: Path) -> "Database":
+        path = Path(path)
+        db = cls(path)
+        db._init()
+        return db
+
+    @contextmanager
+    def connect(self) -> Iterator[sqlite3.Connection]:
+        con = sqlite3.connect(self.path)
+        con.row_factory = sqlite3.Row
+        try:
+            yield con
+            con.commit()
+        finally:
+            con.close()
+
+    def _init(self) -> None:
+        with self.connect() as con:
+            con.executescript(
+                """
+                PRAGMA journal_mode=WAL;
+                CREATE TABLE IF NOT EXISTS podcasts (
+                  id TEXT PRIMARY KEY,
+                  title TEXT NOT NULL,
+                  feed_url TEXT NOT NULL,
+                  link TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS episodes (
+                  id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  podcast_id TEXT NOT NULL,
+                  guid TEXT NOT NULL UNIQUE,
+                  title TEXT NOT NULL,
+                  published_at TEXT NOT NULL,
+                  description TEXT NOT NULL,
+                  audio_url TEXT,
+                  audio_length INTEGER,
+                  duration_seconds INTEGER,
+
+                  incident_type TEXT,
+
+                  primary_time_kind TEXT,
+                  primary_time_year INTEGER,
+                  primary_time_start_year INTEGER,
+                  primary_time_end_year INTEGER,
+
+                  primary_location_name TEXT,
+                  primary_location_country TEXT,
+                  primary_location_lat REAL,
+                  primary_location_lon REAL,
+
+                  persons_json TEXT NOT NULL DEFAULT '[]',
+                  links_json TEXT NOT NULL DEFAULT '[]',
+
+                  FOREIGN KEY(podcast_id) REFERENCES podcasts(id)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_episodes_pub ON episodes(published_at);
+                CREATE INDEX IF NOT EXISTS idx_episodes_inc ON episodes(incident_type);
+                CREATE INDEX IF NOT EXISTS idx_episodes_loc ON episodes(primary_location_lat, primary_location_lon);
+                """
+            )
+
+    def upsert_podcast(self, *, podcast_id: str, title: str, feed_url: str, link: str) -> None:
+        with self.connect() as con:
+            con.execute(
+                """
+                INSERT INTO podcasts(id, title, feed_url, link)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                  title=excluded.title,
+                  feed_url=excluded.feed_url,
+                  link=excluded.link
+                """,
+                (podcast_id, title, feed_url, link),
+            )
+
+    def upsert_episode(self, *, row: Dict[str, Any]) -> None:
+        cols = [
+            'podcast_id', 'guid', 'title', 'published_at', 'description',
+            'audio_url', 'audio_length', 'duration_seconds',
+            'incident_type',
+            'primary_time_kind', 'primary_time_year', 'primary_time_start_year', 'primary_time_end_year',
+            'primary_location_name', 'primary_location_country', 'primary_location_lat', 'primary_location_lon',
+            'persons_json', 'links_json',
+        ]
+        vals = [row.get(c) for c in cols]
+        with self.connect() as con:
+            con.execute(
+                f"""
+                INSERT INTO episodes({', '.join(cols)})
+                VALUES ({', '.join('?' for _ in cols)})
+                ON CONFLICT(guid) DO UPDATE SET
+                  podcast_id=excluded.podcast_id,
+                  title=excluded.title,
+                  published_at=excluded.published_at,
+                  description=excluded.description,
+                  audio_url=excluded.audio_url,
+                  audio_length=excluded.audio_length,
+                  duration_seconds=excluded.duration_seconds,
+                  incident_type=excluded.incident_type,
+                  primary_time_kind=excluded.primary_time_kind,
+                  primary_time_year=excluded.primary_time_year,
+                  primary_time_start_year=excluded.primary_time_start_year,
+                  primary_time_end_year=excluded.primary_time_end_year,
+                  primary_location_name=excluded.primary_location_name,
+                  primary_location_country=excluded.primary_location_country,
+                  primary_location_lat=excluded.primary_location_lat,
+                  primary_location_lon=excluded.primary_location_lon,
+                  persons_json=excluded.persons_json,
+                  links_json=excluded.links_json
+                """,
+                vals,
+            )
+
+    def list_podcasts(self) -> List[Dict[str, Any]]:
+        with self.connect() as con:
+            rows = con.execute("SELECT * FROM podcasts ORDER BY id").fetchall()
+            return [dict(r) for r in rows]
+
+    def list_episodes(self) -> List[Dict[str, Any]]:
+        with self.connect() as con:
+            rows = con.execute("SELECT * FROM episodes ORDER BY published_at").fetchall()
+            return [dict(r) for r in rows]
+
+    def get_episode_by_guid(self, guid: str) -> Dict[str, Any]:
+        with self.connect() as con:
+            row = con.execute("SELECT * FROM episodes WHERE guid=?", (guid,)).fetchone()
+            if row is None:
+                raise KeyError(guid)
+            return dict(row)
+
+    def query_episodes(
+        self,
+        *,
+        podcast_id: Optional[str] = None,
+        q: Optional[str] = None,
+        date_start: Optional[date] = None,
+        date_end: Optional[date] = None,
+        incident_type: Optional[str] = None,
+        bbox: Optional[Tuple[float, float, float, float]] = None,
+        limit: int = 2000,
+    ) -> List[Dict[str, Any]]:
+        sql = "SELECT * FROM episodes"
+        where: List[str] = []
+        params: List[Any] = []
+
+        if podcast_id:
+            where.append("podcast_id = ?")
+            params.append(podcast_id)
+
+        if q:
+            where.append("(title LIKE ? OR description LIKE ?)")
+            params.extend([f"%{q}%", f"%{q}%"])
+
+        if date_start:
+            where.append("date(published_at) >= date(?)")
+            params.append(date_start.isoformat())
+
+        if date_end:
+            where.append("date(published_at) <= date(?)")
+            params.append(date_end.isoformat())
+
+        if incident_type:
+            where.append("incident_type = ?")
+            params.append(incident_type)
+
+        if bbox:
+            min_lon, min_lat, max_lon, max_lat = bbox
+            where.append("primary_location_lat IS NOT NULL AND primary_location_lon IS NOT NULL")
+            where.append("primary_location_lat BETWEEN ? AND ?")
+            where.append("primary_location_lon BETWEEN ? AND ?")
+            params.extend([min_lat, max_lat, min_lon, max_lon])
+
+        if where:
+            sql += " WHERE " + " AND ".join(where)
+
+        sql += " ORDER BY published_at LIMIT ?"
+        params.append(int(limit))
+
+        with self.connect() as con:
+            rows = con.execute(sql, params).fetchall()
+            return [dict(r) for r in rows]
+#+end_src
+
+* src/podcast_atlas/extract.py
+#+begin_src python :tangle src/podcast_atlas/extract.py
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass
+from typing import Iterable, List, Optional, Sequence
+
+from .gazetteer import Gazetteer, Place
+
+
+@dataclass(frozen=True)
+class TimeMention:
+    kind: str  # 'year' | 'range_year'
+    year: Optional[int] = None
+    start_year: Optional[int] = None
+    end_year: Optional[int] = None
+    start: int = 0
+    end: int = 0
+
+
+@dataclass(frozen=True)
+class PrimaryTime:
+    kind: str  # 'point' | 'range' | 'unknown'
+    year: Optional[int] = None
+    start_year: Optional[int] = None
+    end_year: Optional[int] = None
+
+
+@dataclass(frozen=True)
+class LocationMention:
+    name: str
+    kind: str
+    country: str
+    lat: float
+    lon: float
+    start: int
+    end: int
+
+
+def _expand_range_end(start_year: int, end_raw: int) -> int:
+    # 1914-18 -> 1918
+    if end_raw < 100:
+        century = start_year // 100
+        return century * 100 + end_raw
+    return end_raw
+
+
+_RANGE_RE = re.compile(r"(?P<y1>\d{3,4})\s*[\-–—]\s*(?P<y2>\d{2,4})")
+_YEAR_RE = re.compile(r"\b(?P<y>\d{3,4})\b")
+_BC_RE = re.compile(r"\b(?P<y>\d{1,4})\s*(?:v\.?\s*Chr\.?|BC|BCE)\b", re.IGNORECASE)
+
+
+def extract_time_mentions(text: str) -> List[TimeMention]:
+    """Extract year and year-range mentions.
+
+    This is deliberately conservative and schema-stable.
+    """
+    mentions: List[TimeMention] = []
+
+    range_spans: List[tuple[int, int]] = []
+    for m in _RANGE_RE.finditer(text):
+        y1 = int(m.group('y1'))
+        y2 = int(m.group('y2'))
+        y2 = _expand_range_end(y1, y2)
+        mentions.append(TimeMention(kind='range_year', start_year=y1, end_year=y2, start=m.start(), end=m.end()))
+        range_spans.append((m.start(), m.end()))
+
+    # BC years (e.g., 44 v. Chr.)
+    for m in _BC_RE.finditer(text):
+        y = -int(m.group('y'))
+        # Avoid duplicates if part of a range span.
+        if any(a <= m.start() < b for a, b in range_spans):
+            continue
+        mentions.append(TimeMention(kind='year', year=y, start=m.start(), end=m.end()))
+
+    # Plain years not inside a range.
+    for m in _YEAR_RE.finditer(text):
+        if any(a <= m.start() < b for a, b in range_spans):
+            continue
+        y = int(m.group('y'))
+        mentions.append(TimeMention(kind='year', year=y, start=m.start(), end=m.end()))
+
+    return sorted(mentions, key=lambda x: (x.start, x.end))
+
+
+def pick_primary_time(mentions: Sequence[TimeMention]) -> PrimaryTime:
+    # Prefer standalone year mentions over ranges.
+    years = [m for m in mentions if m.kind == 'year' and m.year is not None]
+    if years:
+        # pick the first standalone year mention
+        y = years[0].year
+        return PrimaryTime(kind='point', year=y)
+
+    ranges = [m for m in mentions if m.kind == 'range_year' and m.start_year is not None and m.end_year is not None]
+    if ranges:
+        r = ranges[0]
+        return PrimaryTime(kind='range', start_year=r.start_year, end_year=r.end_year)
+
+    return PrimaryTime(kind='unknown')
+
+
+def extract_locations(text: str, gazetteer: Gazetteer) -> List[LocationMention]:
+    hits: List[LocationMention] = []
+
+    # Prefer longer names first to avoid partial matches.
+    names = []
+    for p in gazetteer.places:
+        names.append((p.name, p))
+        for a in p.aliases:
+            names.append((a, p))
+    names.sort(key=lambda t: len(t[0]), reverse=True)
+
+    used_spans: List[tuple[int, int]] = []
+    for nm, place in names:
+        # word boundary-ish match; allow diacritics and spaces
+        pattern = r"\b" + re.escape(nm) + r"\b"
+        for m in re.finditer(pattern, text, flags=re.IGNORECASE):
+            span = (m.start(), m.end())
+            # avoid overlapping duplicates
+            if any(not (span[1] <= a or span[0] >= b) for a, b in used_spans):
+                continue
+            used_spans.append(span)
+            hits.append(
+                LocationMention(
+                    name=place.name,
+                    kind=place.kind,
+                    country=place.country,
+                    lat=place.lat,
+                    lon=place.lon,
+                    start=m.start(),
+                    end=m.end(),
+                )
+            )
+
+    return sorted(hits, key=lambda x: (x.start, -(x.end - x.start)))
+
+
+def pick_primary_location(locs: Sequence[LocationMention], *, text: str) -> Optional[LocationMention]:
+    if not locs:
+        return None
+    # Smallest start position wins
+    return sorted(locs, key=lambda x: (x.start, x.end))[0]
+
+
+# Heuristic name extraction: sequences of capitalized words + optional particles.
+_PERSON_RE = re.compile(
+    r"\b([A-ZÄÖÜ][a-zäöüß]+\s+(?:(?:von|van|de|del|der|den|da|di)\s+)?[A-ZÄÖÜ][a-zäöüß]+(?:\s+[A-ZÄÖÜ][a-zäöüß]+){0,2})\b"
+)
+
+_PERSON_STOP = {
+    'Ort', 'Zeit', 'Thema', 'Personen', 'Kontext', 'Mehr', 'Folge', 'Jahr', 'Krieg',
+    'Revolution', 'Politik', 'Frankreich', 'Deutschland'
+}
+
+
+def extract_persons(text: str) -> List[str]:
+    # Strip common labels that would otherwise glue to the first name.
+    cleaned = re.sub(
+        r"\b(Personen|Person|Guests|Guest|Mitwirkende)\b\s*:?",
+        " ",
+        text,
+        flags=re.IGNORECASE,
+    )
+
+    found: List[str] = []
+    for m in _PERSON_RE.finditer(cleaned):
+        name = m.group(1).strip()
+        if any(tok in _PERSON_STOP for tok in name.split()):
+            continue
+        found.append(name)
+
+    # Keep order, unique
+    out: List[str] = []
+    seen = set()
+    for n in found:
+        if n not in seen:
+            seen.add(n)
+            out.append(n)
+    return out
+
+
+def classify_incident_type(text: str) -> str:
+    t = text.lower()
+
+    battle_kw = ['schlacht', 'battle', 'verdun']
+    if any(k in t for k in battle_kw):
+        return 'battle'
+
+    if any(k in t for k in ['attentat', 'assassination', 'mord']):
+        return 'assassination'
+
+    if any(k in t for k in ['sturmflut', 'katastrophe', 'disaster', 'flut', 'hurricane', 'earthquake']):
+        return 'disaster'
+
+    if any(k in t for k in ['revolution', 'proteste', 'aufstand', 'frühling']):
+        return 'revolution'
+
+    if any(k in t for k in ['mauerfall', 'wiedervereinigung']):
+        return 'political_change'
+
+    if any(k in t for k in ['politik', 'regierung', 'parlament']):
+        return 'politics'
+
+    return 'other'
+
+
+def extract_links(text: str) -> List[str]:
+    # Very light URL extraction.
+    url_re = re.compile(r"https?://[^\s\]\)<>\"']+")
+    return url_re.findall(text)
+#+end_src
+
+* src/podcast_atlas/gazetteer.py
+#+begin_src python :tangle src/podcast_atlas/gazetteer.py
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Dict, Iterable, List, Optional, Set, Tuple
+
+
+@dataclass(frozen=True)
+class Place:
+    name: str
+    kind: str
+    country: str
+    lat: float
+    lon: float
+    aliases: Tuple[str, ...] = ()
+
+
+class Gazetteer:
+    """Very small offline gazetteer.
+
+    It is intentionally tiny and deterministic. Users can extend it by editing CSV.
+    """
+
+    def __init__(self, places: List[Place]):
+        self._places = places
+        self._name_to_place: Dict[str, Place] = {}
+        self._token_map: Dict[str, Set[str]] = {}
+
+        for p in places:
+            for nm in {p.name, *p.aliases}:
+                self._name_to_place[nm.lower()] = p
+                self._token_map.setdefault(nm.lower(), set()).add(p.name)
+
+    @property
+    def places(self) -> List[Place]:
+        return list(self._places)
+
+    def lookup(self, name: str) -> Optional[Place]:
+        return self._name_to_place.get(name.lower())
+
+    def all_names(self) -> Set[str]:
+        return {p.name for p in self._places}
+
+    @classmethod
+    def from_csv_path(cls, path: str | Path) -> "Gazetteer":
+        import csv
+
+        p = Path(path)
+        rows: List[Place] = []
+        with p.open("r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for r in reader:
+                aliases = tuple(a.strip() for a in (r.get("aliases") or "").split(",") if a.strip())
+                rows.append(
+                    Place(
+                        name=r["name"],
+                        kind=r.get("kind") or "unknown",
+                        country=r.get("country") or "",
+                        lat=float(r["lat"]),
+                        lon=float(r["lon"]),
+                        aliases=aliases,
+                    )
+                )
+        return cls(rows)
+#+end_src
+
+* src/podcast_atlas/ingest.py
+#+begin_src python :tangle src/podcast_atlas/ingest.py
+from __future__ import annotations
+
+import json
+from dataclasses import asdict
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, Optional
+
+import yaml
+
+from .db import Database
+from .extract import (
+    classify_incident_type,
+    extract_links,
+    extract_locations,
+    extract_persons,
+    extract_time_mentions,
+    pick_primary_location,
+    pick_primary_time,
+)
+from .gazetteer import Gazetteer
+from .rss import parse_rss
+
+
+def _duration_to_seconds(raw: Optional[str]) -> Optional[int]:
+    if not raw:
+        return None
+    raw = raw.strip()
+    # itunes duration can be HH:MM:SS or MM:SS or seconds
+    if raw.isdigit():
+        return int(raw)
+    parts = raw.split(':')
+    try:
+        nums = [int(p) for p in parts]
+    except ValueError:
+        return None
+    if len(nums) == 3:
+        h, m, s = nums
+        return h * 3600 + m * 60 + s
+    if len(nums) == 2:
+        m, s = nums
+        return m * 60 + s
+    return None
+
+
+def _load_overrides(path: Optional[Path]) -> Dict[str, Any]:
+    if not path:
+        return {}
+    p = Path(path)
+    if not p.exists():
+        return {}
+    return yaml.safe_load(p.read_text(encoding='utf-8')) or {}
+
+
+def ingest_rss_file(
+    db: Database,
+    *,
+    rss_path: Path,
+    podcast_id: str,
+    feed_url: str,
+    overrides_path: Optional[Path] = None,
+    gazetteer_path: Path = Path('data/gazetteer.csv'),
+) -> None:
+    gaz = Gazetteer.from_csv_path(gazetteer_path)
+    overrides = _load_overrides(overrides_path)
+
+    xml_text = Path(rss_path).read_text(encoding='utf-8')
+    pod, episodes = parse_rss(xml_text)
+
+    db.upsert_podcast(podcast_id=podcast_id, title=pod.title, feed_url=feed_url, link=pod.link)
+
+    for ep in episodes:
+        text = f"{ep.title}\n\n{ep.description}".strip()
+
+        time_mentions = extract_time_mentions(text)
+        primary_time = pick_primary_time(time_mentions)
+
+        locs = extract_locations(text, gaz)
+        primary_loc = pick_primary_location(locs, text=text)
+
+        persons = extract_persons(text)
+        links = extract_links(ep.description)
+
+        incident = classify_incident_type(text)
+
+        # Apply manual overrides.
+        ov = overrides.get(ep.guid) or {}
+        if 'incident_type' in ov:
+            incident = str(ov['incident_type'])
+
+        if 'persons' in ov:
+            persons = [str(x) for x in (ov.get('persons') or [])]
+
+        if 'links' in ov:
+            links = [str(x) for x in (ov.get('links') or [])]
+
+        if 'primary_time' in ov:
+            pt = ov['primary_time'] or {}
+            kind = pt.get('kind', primary_time.kind)
+            if kind == 'point':
+                primary_time = type(primary_time)(kind='point', year=int(pt.get('year')))
+            elif kind == 'range':
+                primary_time = type(primary_time)(
+                    kind='range',
+                    start_year=int(pt.get('start_year')),
+                    end_year=int(pt.get('end_year')),
+                )
+
+        if 'primary_location' in ov:
+            pl = ov['primary_location'] or {}
+            nm = pl.get('name')
+            if nm:
+                place = gaz.lookup(nm)
+                if place:
+                    primary_loc = type(primary_loc)(
+                        name=place.name,
+                        kind=place.kind,
+                        country=place.country,
+                        lat=place.lat,
+                        lon=place.lon,
+                        start=0,
+                        end=0,
+                    )
+
+        row: Dict[str, Any] = {
+            'podcast_id': podcast_id,
+            'guid': ep.guid,
+            'title': ep.title,
+            'published_at': ep.published_at.astimezone().isoformat(),
+            'description': ep.description,
+            'audio_url': ep.audio_url,
+            'audio_length': ep.audio_length,
+            'duration_seconds': _duration_to_seconds(ep.duration_raw),
+            'incident_type': incident,
+            'primary_time_kind': primary_time.kind,
+            'primary_time_year': primary_time.year,
+            'primary_time_start_year': primary_time.start_year,
+            'primary_time_end_year': primary_time.end_year,
+            'primary_location_name': getattr(primary_loc, 'name', None) if primary_loc else None,
+            'primary_location_country': getattr(primary_loc, 'country', None) if primary_loc else None,
+            'primary_location_lat': getattr(primary_loc, 'lat', None) if primary_loc else None,
+            'primary_location_lon': getattr(primary_loc, 'lon', None) if primary_loc else None,
+            'persons_json': json.dumps(persons, ensure_ascii=False),
+            'links_json': json.dumps(links, ensure_ascii=False),
+        }
+
+        db.upsert_episode(row=row)
+#+end_src
+
+* src/podcast_atlas/rss.py
+#+begin_src python :tangle src/podcast_atlas/rss.py
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import datetime
+from email.utils import parsedate_to_datetime
+from typing import List, Optional
+from xml.etree import ElementTree as ET
+
+
+@dataclass(frozen=True)
+class RssPodcast:
+    title: str
+    link: str
+    description: str
+
+
+@dataclass(frozen=True)
+class RssEpisode:
+    guid: str
+    title: str
+    published_at: datetime
+    description: str
+    audio_url: Optional[str]
+    audio_length: Optional[int]
+    duration_raw: Optional[str]
+
+
+def _text(el: Optional[ET.Element]) -> str:
+    return (el.text or "").strip() if el is not None else ""
+
+
+def parse_rss(xml_text: str) -> tuple[RssPodcast, List[RssEpisode]]:
+    root = ET.fromstring(xml_text)
+
+    ch = root.find('channel')
+    if ch is None:
+        raise ValueError('not an RSS 2.0 feed (missing channel)')
+
+    pod = RssPodcast(
+        title=_text(ch.find('title')),
+        link=_text(ch.find('link')),
+        description=_text(ch.find('description')),
+    )
+
+    itunes_ns = '{http://www.itunes.com/dtds/podcast-1.0.dtd}'
+
+    episodes: List[RssEpisode] = []
+    for item in ch.findall('item'):
+        title = _text(item.find('title'))
+        guid = _text(item.find('guid')) or title
+        pub = _text(item.find('pubDate'))
+        if not pub:
+            raise ValueError(f'missing pubDate for item {guid}')
+        published_at = parsedate_to_datetime(pub)
+
+        desc_el = item.find('description')
+        # CDATA becomes .text
+        description = (desc_el.text or "").strip() if desc_el is not None else ""
+
+        enc = item.find('enclosure')
+        audio_url = enc.attrib.get('url') if enc is not None else None
+        audio_length = int(enc.attrib.get('length')) if enc is not None and enc.attrib.get('length') else None
+
+        dur = item.find(f'{itunes_ns}duration')
+        duration_raw = _text(dur) if dur is not None else None
+
+        episodes.append(
+            RssEpisode(
+                guid=guid,
+                title=title,
+                published_at=published_at,
+                description=description,
+                audio_url=audio_url,
+                audio_length=audio_length,
+                duration_raw=duration_raw,
+            )
+        )
+
+    return pod, episodes
+#+end_src
+
+* tests/fixtures/der_rest_ist_geschichte.rss.xml
+#+begin_src xml :tangle tests/fixtures/der_rest_ist_geschichte.rss.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+  <channel>
+    <title>Der Rest ist Geschichte (Fixture)</title>
+    <link>https://example.invalid/der-rest-ist-geschichte</link>
+    <description>Fixture feed used for offline tests.</description>
+    <item>
+      <title>Berlin 1989: Mauerfall und die Menschen</title>
+      <guid>drig-001</guid>
+      <pubDate>Mon, 06 Nov 2023 10:00:00 GMT</pubDate>
+      <description><![CDATA[
+        In Berlin erzählt diese Folge vom Jahr 1989. Personen: Otto von Bismarck (als Rückblick) und Helmut Kohl.
+        Thema: Revolution und Politik. Mehr: https://example.invalid/ref
+      ]]></description>
+      <enclosure url="https://cdn.example.invalid/drig-001.mp3" length="123" type="audio/mpeg"/>
+      <itunes:duration>01:02:03</itunes:duration>
+    </item>
+    <item>
+      <title>Schlacht um Verdun 1916 – Krieg im Westen</title>
+      <guid>drig-002</guid>
+      <pubDate>Mon, 13 Nov 2023 10:00:00 GMT</pubDate>
+      <description><![CDATA[
+        Verdun 1916: eine der verheerendsten Schlachten des Ersten Weltkriegs. Personen: Philippe Pétain.
+        Zeitraum 1914-1918 als Kontext. Ort: Verdun, Frankreich.
+      ]]></description>
+      <enclosure url="https://cdn.example.invalid/drig-002.mp3" length="456" type="audio/mpeg"/>
+      <itunes:duration>00:58:11</itunes:duration>
+    </item>
+    <item>
+      <title>Paris 1789: Beginn der Französischen Revolution</title>
+      <guid>drig-003</guid>
+      <pubDate>Mon, 20 Nov 2023 10:00:00 GMT</pubDate>
+      <description><![CDATA[
+        Paris, 1789. Personen: Maximilien Robespierre.
+        Thema: Revolution.
+      ]]></description>
+      <enclosure url="https://cdn.example.invalid/drig-003.mp3" length="789" type="audio/mpeg"/>
+      <itunes:duration>00:44:20</itunes:duration>
+    </item>
+  </channel>
+</rss>
+#+end_src
+
+* tests/fixtures/eine_stunde_history.rss.xml
+#+begin_src xml :tangle tests/fixtures/eine_stunde_history.rss.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+  <channel>
+    <title>Deutschlandfunk Nova – Eine Stunde History (Fixture)</title>
+    <link>https://example.invalid/eine-stunde-history</link>
+    <description>Fixture feed used for offline tests.</description>
+    <item>
+      <title>Rom 44 v. Chr.: Caesar und das Attentat</title>
+      <guid>esh-001</guid>
+      <pubDate>Wed, 08 Nov 2023 06:00:00 GMT</pubDate>
+      <description><![CDATA[
+        Ort: Rom. Zeit: 44 v. Chr. Personen: Julius Caesar, Marcus Junius Brutus.
+        Thema: Politik, Attentat.
+      ]]></description>
+      <enclosure url="https://cdn.example.invalid/esh-001.mp3" length="111" type="audio/mpeg"/>
+      <itunes:duration>00:59:59</itunes:duration>
+    </item>
+    <item>
+      <title>Hamburg 1962: Sturmflut, Katastrophe und Krisenmanagement</title>
+      <guid>esh-002</guid>
+      <pubDate>Wed, 15 Nov 2023 06:00:00 GMT</pubDate>
+      <description><![CDATA[
+        Hamburg, 1962. Thema: Katastrophe (Sturmflut). Personen: Helmut Schmidt.
+      ]]></description>
+      <enclosure url="https://cdn.example.invalid/esh-002.mp3" length="222" type="audio/mpeg"/>
+      <itunes:duration>01:01:30</itunes:duration>
+    </item>
+    <item>
+      <title>Kairo 2011: Arabischer Frühling und Proteste</title>
+      <guid>esh-003</guid>
+      <pubDate>Wed, 22 Nov 2023 06:00:00 GMT</pubDate>
+      <description><![CDATA[
+        Kairo 2011: Proteste, Revolution, soziale Bewegungen.
+        Personen: Mohamed ElBaradei.
+      ]]></description>
+      <enclosure url="https://cdn.example.invalid/esh-003.mp3" length="333" type="audio/mpeg"/>
+      <itunes:duration>00:53:10</itunes:duration>
+    </item>
+  </channel>
+</rss>
+#+end_src
+
+* tests/test_api_filters.py
+#+begin_src python :tangle tests/test_api_filters.py
+from pathlib import Path
+
+from fastapi.testclient import TestClient
+
+from podcast_atlas.api import create_app
+from podcast_atlas.db import Database
+from podcast_atlas.ingest import ingest_rss_file
+
+
+def _mk_db(tmp_path: Path) -> Path:
+    db_path = tmp_path / 'atlas.sqlite'
+    db = Database.create(db_path)
+    ingest_rss_file(
+        db,
+        rss_path=Path('tests/fixtures/der_rest_ist_geschichte.rss.xml'),
+        podcast_id='drig',
+        feed_url='fixture:drig',
+        overrides_path=Path('data/manual_overrides.yml'),
+    )
+    ingest_rss_file(
+        db,
+        rss_path=Path('tests/fixtures/eine_stunde_history.rss.xml'),
+        podcast_id='esh',
+        feed_url='fixture:esh',
+        overrides_path=Path('data/manual_overrides.yml'),
+    )
+    return db_path
+
+
+def test_api_filters_by_date_range(tmp_path: Path):
+    db_path = _mk_db(tmp_path)
+    app = create_app(db_path)
+    c = TestClient(app)
+
+    # Only 2023 Nov 06..13 should include drig-001 and drig-002 (fixture dates)
+    r = c.get('/api/episodes', params={'date_start': '2023-11-06', 'date_end': '2023-11-13'})
+    assert r.status_code == 200
+    data = r.json()
+    guids = {e['guid'] for e in data['episodes']}
+    assert 'drig-001' in guids
+    assert 'drig-002' in guids
+    assert 'drig-003' not in guids
+
+
+def test_api_filters_by_bbox(tmp_path: Path):
+    db_path = _mk_db(tmp_path)
+    app = create_app(db_path)
+    c = TestClient(app)
+
+    # BBox around Germany should include Berlin + Hamburg episodes
+    r = c.get('/api/episodes', params={'bbox': '5.0,47.0,15.5,55.5'})
+    assert r.status_code == 200
+    guids = {e['guid'] for e in r.json()['episodes']}
+    assert 'drig-001' in guids  # Berlin
+    assert 'esh-002' in guids   # Hamburg
+    assert 'esh-003' not in guids  # Kairo
+
+
+def test_api_filters_by_incident_type(tmp_path: Path):
+    db_path = _mk_db(tmp_path)
+    app = create_app(db_path)
+    c = TestClient(app)
+
+    r = c.get('/api/episodes', params={'incident_type': 'revolution'})
+    assert r.status_code == 200
+    guids = {e['guid'] for e in r.json()['episodes']}
+    assert 'drig-003' in guids
+    assert 'esh-003' in guids
+    assert 'drig-002' not in guids
+#+end_src
+
+* tests/test_api_schema.py
+#+begin_src python :tangle tests/test_api_schema.py
+import json
+from pathlib import Path
+
+import jsonschema
+from fastapi.testclient import TestClient
+
+from podcast_atlas.api import create_app
+from podcast_atlas.db import Database
+from podcast_atlas.ingest import ingest_rss_file
+
+
+def test_api_episodes_schema(tmp_path: Path):
+    db_path = tmp_path / 'atlas.sqlite'
+    db = Database.create(db_path)
+    ingest_rss_file(
+        db,
+        rss_path=Path('tests/fixtures/der_rest_ist_geschichte.rss.xml'),
+        podcast_id='drig',
+        feed_url='fixture:drig',
+        overrides_path=Path('data/manual_overrides.yml'),
+    )
+
+    app = create_app(db_path)
+    c = TestClient(app)
+    r = c.get('/api/episodes')
+    assert r.status_code == 200
+
+    schema = json.loads(Path('schemas/api_episodes.schema.json').read_text(encoding='utf-8'))
+    jsonschema.validate(instance=r.json(), schema=schema)
+#+end_src
+
+* tests/test_extract.py
+#+begin_src python :tangle tests/test_extract.py
+from podcast_atlas.extract import (
+    classify_incident_type,
+    extract_locations,
+    extract_persons,
+    extract_time_mentions,
+    pick_primary_location,
+    pick_primary_time,
+)
+from podcast_atlas.gazetteer import Gazetteer
+
+
+def test_extract_time_year_and_range():
+    txt = "Verdun 1916: Kontext 1914-1918"
+    mentions = extract_time_mentions(txt)
+    years = {m.year for m in mentions if m.kind == 'year'}
+    assert 1916 in years
+
+    ranges = [m for m in mentions if m.kind == 'range_year']
+    assert ranges
+    r = ranges[0]
+    assert r.start_year == 1914
+    assert r.end_year == 1918
+
+
+def test_pick_primary_time_prefers_specific_year():
+    txt = "Kontext 1914-1918, aber Schwerpunkt 1916"
+    primary = pick_primary_time(extract_time_mentions(txt))
+    assert primary.kind == 'point'
+    assert primary.year == 1916
+
+
+def test_extract_locations_from_gazetteer(tmp_path):
+    gaz = Gazetteer.from_csv_path('data/gazetteer.csv')
+    txt = "Ort: Berlin und später Paris"
+    locs = extract_locations(txt, gaz)
+    names = {l.name for l in locs}
+    assert 'Berlin' in names
+    assert 'Paris' in names
+
+
+def test_pick_primary_location_first_mention():
+    gaz = Gazetteer.from_csv_path('data/gazetteer.csv')
+    txt = "Paris, dann Berlin"
+    primary = pick_primary_location(extract_locations(txt, gaz), text=txt)
+    assert primary.name == 'Paris'
+
+
+def test_extract_persons_basic_heuristic_for_titlecase_sequences():
+    txt = "Personen: Julius Caesar, Marcus Junius Brutus und Helmut Kohl."
+    persons = extract_persons(txt)
+    assert 'Julius Caesar' in persons
+    assert 'Marcus Junius Brutus' in persons
+    assert 'Helmut Kohl' in persons
+
+
+def test_incident_type_classification():
+    assert classify_incident_type('Schlacht um Verdun 1916') == 'battle'
+    assert classify_incident_type('Sturmflut in Hamburg 1962') == 'disaster'
+    assert classify_incident_type('Französische Revolution 1789') == 'revolution'
+#+end_src
+
+* tests/test_ingest_db.py
+#+begin_src python :tangle tests/test_ingest_db.py
+from pathlib import Path
+
+from podcast_atlas.db import Database
+from podcast_atlas.ingest import ingest_rss_file
+
+
+def test_ingest_fixture_feeds_into_sqlite(tmp_path: Path):
+    db_path = tmp_path / 'atlas.sqlite'
+    db = Database.create(db_path)
+
+    ingest_rss_file(
+        db,
+        rss_path=Path('tests/fixtures/der_rest_ist_geschichte.rss.xml'),
+        podcast_id='drig',
+        feed_url='fixture:drig',
+        overrides_path=Path('data/manual_overrides.yml'),
+    )
+    ingest_rss_file(
+        db,
+        rss_path=Path('tests/fixtures/eine_stunde_history.rss.xml'),
+        podcast_id='esh',
+        feed_url='fixture:esh',
+        overrides_path=Path('data/manual_overrides.yml'),
+    )
+
+    podcasts = db.list_podcasts()
+    assert {p['id'] for p in podcasts} == {'drig', 'esh'}
+
+    eps = db.list_episodes()
+    assert len(eps) == 6
+
+    # Manual override should set primary location and incident type.
+    e = db.get_episode_by_guid('drig-002')
+    assert e['incident_type'] == 'battle'
+    assert e['primary_location_name'] == 'Verdun'
+    assert e['primary_time_year'] == 1916
+
+    e2 = db.get_episode_by_guid('esh-001')
+    assert e2['incident_type'] == 'assassination'
+    assert e2['primary_time_year'] == -44
+#+end_src
+
+* web/index.html
+#+begin_src html :tangle web/index.html
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Podcast Atlas</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+#+end_src
+
+* web/package.json
+#+begin_src json :tangle web/package.json
+{
+  "name": "podcast-atlas-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "leaflet": "^1.9.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-leaflet": "^4.2.1",
+    "recharts": "^2.12.0",
+    "rc-slider": "^10.5.0"
+  },
+  "devDependencies": {
+    "@types/leaflet": "^1.9.12",
+    "@types/react": "^18.2.66",
+    "@types/react-dom": "^18.2.22",
+    "@vitejs/plugin-react": "^4.2.1",
+    "typescript": "^5.4.5",
+    "vite": "^5.2.0"
+  }
+}
+#+end_src
+
+* web/src/App.tsx
+#+begin_src tsx :tangle web/src/App.tsx
+import React, { useEffect, useMemo, useState } from 'react'
+import type { Episode, Podcast } from './types'
+import { PRESETS } from './presets'
+import TimeRangeSlider from './components/TimeRangeSlider'
+import Timeline from './components/Timeline'
+import IncidentTypeChart from './components/IncidentTypeChart'
+import MapView, { BBox } from './components/MapView'
+import EpisodeTable from './components/EpisodeTable'
+
+const API_BASE = (import.meta as any).env?.VITE_API_BASE ?? 'http://127.0.0.1:8000'
+
+type Meta = {
+  min_date: string | null
+  max_date: string | null
+  incident_types: string[]
+  podcasts: Podcast[]
+}
+
+function isoDate(d: Date): string {
+  return d.toISOString().slice(0, 10)
+}
+
+export default function App() {
+  const [meta, setMeta] = useState<Meta | null>(null)
+  const [episodes, setEpisodes] = useState<Episode[]>([])
+
+  const [podcastId, setPodcastId] = useState<string>('')
+  const [incidentType, setIncidentType] = useState<string>('')
+  const [q, setQ] = useState<string>('')
+  const [presetId, setPresetId] = useState<string>('all')
+
+  const [epochMinMax, setEpochMinMax] = useState<[number, number] | null>(null)
+  const [epochRange, setEpochRange] = useState<[number, number] | null>(null)
+
+  const [bbox, setBbox] = useState<BBox | null>(null)
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/meta`)
+      .then((r) => r.json())
+      .then((m: Meta) => {
+        setMeta(m)
+        if (m.min_date && m.max_date) {
+          const min = new Date(m.min_date + 'T00:00:00Z').getTime()
+          const max = new Date(m.max_date + 'T00:00:00Z').getTime()
+          setEpochMinMax([min, max])
+          setEpochRange([min, max])
+        }
+      })
+  }, [])
+
+  const effectivePreset = useMemo(() => PRESETS.find((p) => p.id === presetId) ?? PRESETS[0], [presetId])
+
+  const effectiveIncident = incidentType || effectivePreset.filter.incident_type || ''
+  const effectiveQ = q || effectivePreset.filter.q || ''
+
+  useEffect(() => {
+    const params = new URLSearchParams()
+    if (podcastId) params.set('podcast_id', podcastId)
+    if (effectiveIncident) params.set('incident_type', effectiveIncident)
+    if (effectiveQ) params.set('q', effectiveQ)
+
+    if (epochRange) {
+      params.set('date_start', isoDate(new Date(epochRange[0])))
+      params.set('date_end', isoDate(new Date(epochRange[1])))
+    }
+
+    if (bbox) {
+      params.set('bbox', `${bbox.minLon},${bbox.minLat},${bbox.maxLon},${bbox.maxLat}`)
+    }
+
+    fetch(`${API_BASE}/api/episodes?` + params.toString())
+      .then((r) => r.json())
+      .then((j) => setEpisodes(j.episodes ?? []))
+  }, [podcastId, effectiveIncident, effectiveQ, epochRange, bbox])
+
+  return (
+    <div style={{ fontFamily: 'system-ui, sans-serif', padding: 16, maxWidth: 1200, margin: '0 auto' }}>
+      <h1 style={{ margin: 0 }}>Podcast Atlas</h1>
+      <p style={{ marginTop: 4, color: '#444' }}>
+        Timeline + map exploration of RSS podcasts with extracted context (time, place, persons, incident type).
+      </p>
+
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'end', marginTop: 12 }}>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          Preset
+          <select value={presetId} onChange={(e) => setPresetId(e.target.value)}>
+            {PRESETS.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          Podcast
+          <select value={podcastId} onChange={(e) => setPodcastId(e.target.value)}>
+            <option value="">All</option>
+            {(meta?.podcasts ?? []).map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.id} — {p.title}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          Incident type
+          <select value={incidentType} onChange={(e) => setIncidentType(e.target.value)}>
+            <option value="">(preset / any)</option>
+            {(meta?.incident_types ?? []).map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: 260 }}>
+          Text query
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search title/description" />
+        </label>
+      </div>
+
+      <div style={{ marginTop: 18 }}>
+        <h2 style={{ margin: '8px 0' }}>Time span</h2>
+        {epochMinMax && epochRange ? (
+          <TimeRangeSlider
+            min={epochMinMax[0]}
+            max={epochMinMax[1]}
+            value={epochRange}
+            onChange={setEpochRange}
+          />
+        ) : (
+          <div>Loading…</div>
+        )}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 18 }}>
+        <div>
+          <h2 style={{ margin: '8px 0' }}>Timeline</h2>
+          <Timeline episodes={episodes} />
+          <IncidentTypeChart episodes={episodes} />
+        </div>
+        <div>
+          <h2 style={{ margin: '8px 0' }}>Map filter</h2>
+          <MapView episodes={episodes} onBboxChange={setBbox} />
+          <div style={{ fontSize: 12, color: '#444', marginTop: 6 }}>
+            Tip: pan/zoom the map. Episodes are filtered to the current view bounds.
+          </div>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 18 }}>
+        <h2 style={{ margin: '8px 0' }}>Episodes ({episodes.length})</h2>
+        <EpisodeTable episodes={episodes} />
+      </div>
+    </div>
+  )
+}
+#+end_src
+
+* web/src/components/EpisodeTable.tsx
+#+begin_src tsx :tangle web/src/components/EpisodeTable.tsx
+import React, { useState } from 'react'
+import type { Episode } from '../types'
+
+export default function EpisodeTable(props: { episodes: Episode[] }) {
+  const [open, setOpen] = useState<string | null>(null)
+
+  return (
+    <div style={{ border: '1px solid #ddd', borderRadius: 8, overflow: 'hidden' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <thead>
+          <tr style={{ background: '#f6f6f6' }}>
+            <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ddd' }}>Date</th>
+            <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ddd' }}>Podcast</th>
+            <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ddd' }}>Title</th>
+            <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ddd' }}>Type</th>
+            <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #ddd' }}>Location</th>
+          </tr>
+        </thead>
+        <tbody>
+          {props.episodes.map((e) => (
+            <React.Fragment key={e.guid}>
+              <tr
+                onClick={() => setOpen(open === e.guid ? null : e.guid)}
+                style={{ cursor: 'pointer' }}
+              >
+                <td style={{ padding: 8, borderBottom: '1px solid #eee', whiteSpace: 'nowrap' }}>{
+                  e.published_at.slice(0, 10)
+                }</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee', whiteSpace: 'nowrap' }}>{e.podcast_id}</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{e.title}</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee', whiteSpace: 'nowrap' }}>{e.incident_type}</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee', whiteSpace: 'nowrap' }}>{e.primary_location?.name ?? '—'}</td>
+              </tr>
+              {open === e.guid ? (
+                <tr>
+                  <td colSpan={5} style={{ padding: 10, background: '#fafafa', borderBottom: '1px solid #eee' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                      <div>
+                        <div style={{ fontWeight: 600, marginBottom: 6 }}>Extracted context</div>
+                        <div style={{ fontSize: 13 }}>
+                          <div><b>Time:</b> {e.primary_time.kind === 'point' ? e.primary_time.year : e.primary_time.kind}</div>
+                          <div><b>Persons:</b> {e.persons.length ? e.persons.join(', ') : '—'}</div>
+                          <div><b>Links:</b> {e.links.length ? e.links.join(' • ') : '—'}</div>
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 600, marginBottom: 6 }}>Description</div>
+                        <div style={{ fontSize: 13, whiteSpace: 'pre-wrap' }}>{e.description.trim()}</div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              ) : null}
+            </React.Fragment>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+#+end_src
+
+* web/src/components/IncidentTypeChart.tsx
+#+begin_src tsx :tangle web/src/components/IncidentTypeChart.tsx
+import React, { useMemo } from 'react'
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import type { Episode } from '../types'
+
+export default function IncidentTypeChart(props: { episodes: Episode[] }) {
+  const data = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const e of props.episodes) {
+      const k = e.incident_type || 'other'
+      m.set(k, (m.get(k) ?? 0) + 1)
+    }
+    return Array.from(m.entries())
+      .map(([k, v]) => ({ incident_type: k, count: v }))
+      .sort((a, b) => b.count - a.count)
+  }, [props.episodes])
+
+  return (
+    <div style={{ height: 220, border: '1px solid #ddd', borderRadius: 8, marginTop: 12 }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data} margin={{ top: 10, right: 20, bottom: 30, left: 20 }}>
+          <CartesianGrid />
+          <XAxis dataKey="incident_type" interval={0} angle={-20} textAnchor="end" height={60} />
+          <YAxis />
+          <Tooltip />
+          <Bar dataKey="count" />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+#+end_src
+
+* web/src/components/MapView.tsx
+#+begin_src tsx :tangle web/src/components/MapView.tsx
+import React, { useEffect, useMemo, useState } from 'react'
+import { MapContainer, Marker, Popup, TileLayer, useMapEvents } from 'react-leaflet'
+import type { Episode } from '../types'
+import L from 'leaflet'
+
+// Fix default marker icons in Vite/React
+import iconUrl from 'leaflet/dist/images/marker-icon.png'
+import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png'
+import shadowUrl from 'leaflet/dist/images/marker-shadow.png'
+
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl,
+  iconUrl,
+  shadowUrl,
+})
+
+export type BBox = { minLon: number; minLat: number; maxLon: number; maxLat: number }
+
+function BoundsReporter(props: { onChange: (b: BBox) => void }) {
+  useMapEvents({
+    moveend(e) {
+      const b = e.target.getBounds()
+      props.onChange({
+        minLon: b.getWest(),
+        minLat: b.getSouth(),
+        maxLon: b.getEast(),
+        maxLat: b.getNorth(),
+      })
+    },
+    zoomend(e) {
+      const b = e.target.getBounds()
+      props.onChange({
+        minLon: b.getWest(),
+        minLat: b.getSouth(),
+        maxLon: b.getEast(),
+        maxLat: b.getNorth(),
+      })
+    },
+  })
+  return null
+}
+
+export default function MapView(props: { episodes: Episode[]; onBboxChange: (b: BBox | null) => void }) {
+  const points = useMemo(() => props.episodes.filter((e) => e.primary_location), [props.episodes])
+
+  // Default center roughly Europe.
+  const [center] = useState<[number, number]>([51.0, 10.0])
+
+  // On first render, clear bbox until map reports it.
+  useEffect(() => {
+    props.onBboxChange(null)
+  }, [])
+
+  return (
+    <div style={{ height: 340, border: '1px solid #ddd', borderRadius: 8, overflow: 'hidden' }}>
+      <MapContainer center={center} zoom={4} style={{ height: '100%', width: '100%' }}>
+        <TileLayer
+          attribution='&copy; OpenStreetMap contributors'
+          url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+        />
+        <BoundsReporter onChange={(b) => props.onBboxChange(b)} />
+        {points.map((e) => (
+          <Marker
+            key={e.guid}
+            position={[e.primary_location!.lat, e.primary_location!.lon]}
+            title={e.title}
+          >
+            <Popup>
+              <div style={{ maxWidth: 260 }}>
+                <div style={{ fontWeight: 600 }}>{e.title}</div>
+                <div style={{ fontSize: 12, color: '#444' }}>
+                  {e.podcast_id} • {e.published_at.slice(0, 10)}
+                </div>
+                <div style={{ fontSize: 12, marginTop: 6 }}>
+                  {e.primary_location?.name} ({e.incident_type})
+                </div>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
+      </MapContainer>
+    </div>
+  )
+}
+#+end_src
+
+* web/src/components/TimeRangeSlider.tsx
+#+begin_src tsx :tangle web/src/components/TimeRangeSlider.tsx
+import React, { useMemo } from 'react'
+import Slider from 'rc-slider'
+
+const DAY_MS = 24 * 3600 * 1000
+
+function fmt(ms: number): string {
+  return new Date(ms).toISOString().slice(0, 10)
+}
+
+export default function TimeRangeSlider(props: {
+  min: number
+  max: number
+  value: [number, number]
+  onChange: (v: [number, number]) => void
+}) {
+  const marks = useMemo(() => {
+    const out: Record<number, string> = {}
+    out[props.min] = fmt(props.min)
+    out[props.max] = fmt(props.max)
+    return out
+  }, [props.min, props.max])
+
+  return (
+    <div style={{ padding: '10px 8px 0 8px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#444' }}>
+        <span>{fmt(props.value[0])}</span>
+        <span>{fmt(props.value[1])}</span>
+      </div>
+      <Slider
+        range
+        min={props.min}
+        max={props.max}
+        step={DAY_MS}
+        value={props.value}
+        onChange={(v) => {
+          const arr = v as number[]
+          props.onChange([arr[0], arr[1]])
+        }}
+        marks={marks}
+        allowCross={false}
+      />
+    </div>
+  )
+}
+#+end_src
+
+* web/src/components/Timeline.tsx
+#+begin_src tsx :tangle web/src/components/Timeline.tsx
+import React, { useMemo } from 'react'
+import { CartesianGrid, Legend, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis } from 'recharts'
+import type { Episode } from '../types'
+
+const PALETTE = [
+  '#1f77b4',
+  '#ff7f0e',
+  '#2ca02c',
+  '#d62728',
+  '#9467bd',
+  '#8c564b',
+  '#e377c2',
+  '#7f7f7f',
+]
+
+function toMs(iso: string): number {
+  return new Date(iso).getTime()
+}
+
+function fmtDate(ms: number): string {
+  return new Date(ms).toISOString().slice(0, 10)
+}
+
+export default function Timeline(props: { episodes: Episode[] }) {
+  const podcasts = useMemo(() => {
+    const ids = Array.from(new Set(props.episodes.map((e) => e.podcast_id)))
+    ids.sort()
+    return ids
+  }, [props.episodes])
+
+  const podIndex = useMemo(() => {
+    const m = new Map<string, number>()
+    podcasts.forEach((id, i) => m.set(id, i))
+    return m
+  }, [podcasts])
+
+  const byIncident = useMemo(() => {
+    const m = new Map<string, { x: number; y: number; e: Episode }[]>()
+    for (const e of props.episodes) {
+      const inc = e.incident_type || 'other'
+      const arr = m.get(inc) ?? []
+      arr.push({ x: toMs(e.published_at), y: podIndex.get(e.podcast_id) ?? 0, e })
+      m.set(inc, arr)
+    }
+    return Array.from(m.entries()).sort((a, b) => a[0].localeCompare(b[0]))
+  }, [props.episodes, podIndex])
+
+  return (
+    <div style={{ height: 340, border: '1px solid #ddd', borderRadius: 8 }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <ScatterChart margin={{ top: 10, right: 20, bottom: 30, left: 20 }}>
+          <CartesianGrid />
+          <XAxis
+            dataKey="x"
+            type="number"
+            domain={['auto', 'auto']}
+            tickFormatter={(v) => fmtDate(v as number)}
+            name="date"
+          />
+          <YAxis
+            dataKey="y"
+            type="number"
+            domain={[0, Math.max(0, podcasts.length - 1)]}
+            tickFormatter={(v) => podcasts[Math.round(v as number)] ?? ''}
+            name="podcast"
+          />
+          <Tooltip
+            cursor={{ strokeDasharray: '3 3' }}
+            formatter={(_, __, p) => {
+              const e = (p.payload as any).e as Episode
+              return [e.title, `${e.podcast_id} • ${fmtDate(toMs(e.published_at))}`]
+            }}
+          />
+          <Legend />
+          {byIncident.map(([inc, pts], i) => (
+            <Scatter key={inc} name={inc} data={pts} fill={PALETTE[i % PALETTE.length]} />
+          ))}
+        </ScatterChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+#+end_src
+
+* web/src/main.tsx
+#+begin_src tsx :tangle web/src/main.tsx
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App'
+import 'leaflet/dist/leaflet.css'
+import 'rc-slider/assets/index.css'
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+)
+#+end_src
+
+* web/src/presets.ts
+#+begin_src typescript :tangle web/src/presets.ts
+export type Preset = {
+  id: string
+  label: string
+  filter: {
+    q?: string
+    incident_type?: string
+  }
+}
+
+export const PRESETS: Preset[] = [
+  { id: 'all', label: 'All', filter: {} },
+  { id: 'revolutions', label: 'Revolutions', filter: { incident_type: 'revolution' } },
+  { id: 'battles', label: 'Battles', filter: { incident_type: 'battle' } },
+  { id: 'disasters', label: 'Disasters', filter: { incident_type: 'disaster' } },
+  { id: 'assassinations', label: 'Assassinations', filter: { incident_type: 'assassination' } },
+  { id: 'germany', label: 'Germany (text)', filter: { q: 'Berlin' } },
+]
+#+end_src
+
+* web/src/types.ts
+#+begin_src typescript :tangle web/src/types.ts
+export type Podcast = {
+  id: string
+  title: string
+  feed_url: string
+  link: string
+}
+
+export type Episode = {
+  podcast_id: string
+  guid: string
+  title: string
+  published_at: string
+  audio_url?: string | null
+  duration_seconds?: number | null
+  incident_type: string
+  primary_time: {
+    kind: string
+    year?: number | null
+    start_year?: number | null
+    end_year?: number | null
+  }
+  primary_location?: {
+    name: string
+    country?: string | null
+    lat: number
+    lon: number
+  } | null
+  persons: string[]
+  links: string[]
+  description: string
+}
+#+end_src
+
+* web/tsconfig.json
+#+begin_src json :tangle web/tsconfig.json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "skipLibCheck": true,
+    "types": ["vite/client"]
+  },
+  "include": ["src"]
+}
+#+end_src
+
+* web/vite.config.ts
+#+begin_src typescript :tangle web/vite.config.ts
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    port: 5173,
+  },
+})
+#+end_src

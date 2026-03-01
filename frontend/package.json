@@ -1,0 +1,44 @@
+{
+  "name": "podcast-static-explorer",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "lint": "biome check src vite.config.ts biome.json tailwind.config.js postcss.config.js",
+    "lint:fix": "biome check --write src vite.config.ts biome.json tailwind.config.js postcss.config.js",
+    "format": "biome format --write src vite.config.ts biome.json tailwind.config.js postcss.config.js",
+    "check": "biome check src vite.config.ts biome.json tailwind.config.js postcss.config.js"
+  },
+  "dependencies": {
+    "d3": "^7.9.0",
+    "plotly.js-dist-min": "^3.4.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-resizable-panels": "^4.6.5",
+    "minisearch": "^7.1.1",
+    "@tanstack/react-table": "^8.21.2",
+    "@tanstack/react-virtual": "^3.13.2"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.4",
+    "@tailwindcss/postcss": "^4.2.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/d3": "^7.4.3",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.4",
+    "autoprefixer": "^10.4.27",
+    "happy-dom": "^20.7.0",
+    "jsdom": "^28.1.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.2.1",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vitest": "^4.0.18"
+  }
+}

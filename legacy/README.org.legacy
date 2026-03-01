@@ -1,0 +1,85 @@
+#+title: Podcast Atlas
+
+A small, *agent-friendly* pipeline to:
+- ingest podcast RSS feeds into SQLite
+- extract context from titles + descriptions (time, place, persons, incident type, links)
+- explore episodes via a web UI with:
+  - a two-sided time-range slider
+  - a timeline plot
+  - a map view that filters by the current map bounds
+  - preset filters + text search
+  - saved filters panel (localStorage + JSON export/import)
+
+* What’s inside
+- =src/podcast_atlas/= Python package
+  - =ingest.py= RSS -> SQLite + extraction
+  - =extract.py= heuristic context extraction
+  - =api.py= FastAPI read API
+  - =cli.py= convenience commands
+- =data/podcast_atlas.sqlite= sample DB built from offline fixture feeds
+- =web/= Vite+React frontend
+
+* Quickstart (offline demo)
+#+begin_src sh
+# from repo root
+PYTHONPATH=src python scripts/build_demo_db.py
+PYTHONPATH=src python -m podcast_atlas.cli serve --db data/podcast_atlas.sqlite --host 127.0.0.1 --port 8000
+#+end_src
+
+In another terminal:
+#+begin_src sh
+cd web
+npm install
+npm run dev
+#+end_src
+
+* API endpoints
+- =GET /api/meta= :: global bounds and enums
+- =GET /api/episodes= :: filtered episodes
+- =GET /api/facets= :: faceted counts (incident type, location, decade) for the current filter set
+
+* Tests
+#+begin_src sh
+pytest
+#+end_src
+
+Frontend:
+#+begin_src sh
+cd web
+npm test
+#+end_src
+
+Then open the Vite URL (usually http://127.0.0.1:5173).
+
+* Ingesting real feeds
+This environment cannot fetch the live RSS feeds (no outbound network here), so the repository ships *fixture feeds* under =tests/fixtures/=.
+
+On your machine with internet access, you can ingest a real RSS XML file like:
+#+begin_src sh
+podcast-atlas ingest \
+  --db data/podcast_atlas.sqlite \
+  --podcast-id drig \
+  --feed-url 'https://…actual-feed-url…' \
+  --rss-file /path/to/downloaded.rss.xml \
+  --overrides data/manual_overrides.yml
+#+end_src
+
+Or (for some Deutschlandfunk shows) crawl a =podcast.de= archive, which often contains a stable direct MP3 link on each episode page:
+
+#+begin_src sh
+podcast-atlas ingest-podcastde \
+  --db data/podcast_atlas.sqlite \
+  --podcast-id drig \
+  --archive-url 'https://www.podcast.de/podcast/3205118/archiv' \
+  --max-pages 20 --max-episodes 400 \
+  --overrides data/manual_overrides.yml
+#+end_src
+
+* Manual review workflow
+- Put curated corrections in =data/manual_overrides.yml= keyed by episode GUID.
+- Re-run ingest; it is idempotent (UPSERT by GUID).
+
+* Development
+#+begin_src sh
+PYTHONPATH=src pytest
+#+end_src
