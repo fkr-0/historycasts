@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+  <channel>
+    <title>Der Rest ist Geschichte (Snapshot 2026-02)</title>
+    <link>https://www.deutschlandfunk.de/deutschlandfunk-der-rest-ist-geschichte-100.html</link>
+    <description>Snapshot feed built from podcast.de metadata.</description>
+    <item>
+      <title>Bayern - Warum gibt es die CSU?</title>
+      <guid>podcastde:701243987</guid>
+      <pubDate>Thu, 26 Feb 2026 13:00:00 GMT</pubDate>
+      <description><![CDATA[
+Mütterrente, Milchpreise, Maut: Die CSU schafft es immer wieder,
+ihre Themen auf Bundesebene zu platzieren oder sogar durchzusetzen.
+Sie ist eine bayerische Regionalpartei mit nationalem Einfluss –
+ein Sonderfall in der deutschen Parteienlandschaft.
+      ]]></description>
+      <enclosure url="https://podcast-mp3.dradio.de/podcast/2026/02/26/bayern_warum_gibt_es_die_csu_dlf_20260226_1300_1413840a.mp3?refId=deutschlandfunk-der-rest-ist-geschichte-100" length="0" type="audio/mpeg"/>
+      <itunes:duration>00:51:00</itunes:duration>
+    </item>
+  </channel>
+</rss>

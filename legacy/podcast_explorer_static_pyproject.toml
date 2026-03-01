@@ -1,0 +1,20 @@
+[project]
+name = "podcast-explorer-static"
+version = "0.2.0"
+description = "Build/upgrade podcast SQLite DB from RSS and export static dataset.json for a React timeline explorer."
+requires-python = ">=3.11"
+dependencies = [
+  "pydantic>=2.6",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+]
+
+[project.scripts]
+podcast-db = "podcast_explorer_static.cli:main"
+podcast-export = "podcast_explorer_static.export_static:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

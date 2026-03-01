@@ -1,0 +1,43 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+*.egg-info/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Node / frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Build outputs / runtime artifacts
+build/
+dist/
+pages/
+pages_local/
+release_bundle/
+*.log
+legacy/archives/
+
+# SQLite transient files
+*.db-shm
+*.db-wal
+*.db-journal
+
+# Keep canonical DB versioned for CI extraction
+!active.db

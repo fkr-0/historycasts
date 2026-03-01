@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Podcast Explorer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #111111;
+      --accent: #007acc;
+      --card-bg: #f5f5f5;
+      --card-border: #dddddd;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1e1e1e;
+        --fg: #f3f3f3;
+        --accent: #569cd6;
+        --card-bg: #2d2d2d;
+        --card-border: #444444;
+      }
+    }
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background-color: var(--bg);
+      color: var(--fg);
+      display: flex;
+      height: 100vh;
+    }
+    #sidebar {
+      width: 280px;
+      border-right: 1px solid var(--card-border);
+      padding: 1rem;
+      overflow-y: auto;
+    }
+    #content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    .podcast-list, .episode-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .podcast-item {
+      padding: 0.5rem;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .podcast-item:hover {
+      background-color: var(--card-bg);
+    }
+    .podcast-item.active {
+      background-color: var(--accent);
+      color: var(--bg);
+    }
+    .episode-card {
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      padding: 0.75rem;
+      margin: 0.5rem;
+      background-color: var(--card-bg);
+    }
+    .episode-title {
+      font-weight: bold;
+      margin-bottom: 0.25rem;
+    }
+    .episode-date {
+      font-size: 0.85rem;
+      color: var(--accent);
+    }
+    .dark-toggle {
+      margin-top: 1rem;
+      display: flex;
+      align-items: center;
+    }
+    .dark-toggle input {
+      margin-right: 0.5rem;
+    }
+    nav a {
+      color: var(--accent);
+      margin-right: 1rem;
+    }
+    nav a.active {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div id="sidebar">
+    <h2>Podcast Explorer</h2>
+    <nav id="nav">
+      <a href="#home" class="active">Home</a>
+      <a href="#docs">Docs</a>
+    </nav>
+    <div class="dark-toggle">
+      <input type="checkbox" id="darkModeToggle">
+      <label for="darkModeToggle">Dark mode</label>
+    </div>
+    <h3>Podcasts</h3>
+    <ul id="podcastList" class="podcast-list"></ul>
+  </div>
+  <div id="content">
+    <div id="homeView" style="flex: 1; overflow-y: auto;">
+      <div id="episodeContainer"></div>
+    </div>
+    <div id="docsView" style="display: none; padding: 1rem; overflow-y: auto;">
+      <h2>Documentation</h2>
+      <div id="docsContent">Loading documentation…</div>
+    </div>
+  </div>
+  <script>
+    // Dark mode toggle: override prefers-color-scheme
+    const darkToggle = document.getElementById('darkModeToggle');
+    function applyTheme(dark) {
+      if (dark) {
+        document.documentElement.style.setProperty('--bg', '#1e1e1e');
+        document.documentElement.style.setProperty('--fg', '#f3f3f3');
+        document.documentElement.style.setProperty('--accent', '#569cd6');
+        document.documentElement.style.setProperty('--card-bg', '#2d2d2d');
+        document.documentElement.style.setProperty('--card-border', '#444444');
+      } else {
+        document.documentElement.style.setProperty('--bg', '#ffffff');
+        document.documentElement.style.setProperty('--fg', '#111111');
+        document.documentElement.style.setProperty('--accent', '#007acc');
+        document.documentElement.style.setProperty('--card-bg', '#f5f5f5');
+        document.documentElement.style.setProperty('--card-border', '#dddddd');
+      }
+    }
+    darkToggle.addEventListener('change', () => {
+      applyTheme(darkToggle.checked);
+      localStorage.setItem('darkMode', darkToggle.checked ? '1' : '0');
+    });
+    // initialise theme
+    (function() {
+      const stored = localStorage.getItem('darkMode');
+      const dark = stored === '1' || (stored === null && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      darkToggle.checked = dark;
+      applyTheme(dark);
+    })();
+
+    // Simple client‑side router
+    window.addEventListener('hashchange', () => {
+      const hash = location.hash.replace(/^#/, '') || 'home';
+      document.querySelectorAll('nav a').forEach(a => {
+        if (a.getAttribute('href') === '#' + hash) a.classList.add('active');
+        else a.classList.remove('active');
+      });
+      document.getElementById('homeView').style.display = hash === 'home' ? '' : 'none';
+      document.getElementById('docsView').style.display = hash === 'docs' ? '' : 'none';
+    });
+    // Trigger initial navigation
+    window.dispatchEvent(new HashChangeEvent('hashchange'));
+
+    // Load dataset and populate UI
+    fetch('dataset.json')
+      .then(res => res.json())
+      .then(data => {
+        const podcastListEl = document.getElementById('podcastList');
+        const episodeContainer = document.getElementById('episodeContainer');
+        let selectedPodcastId = null;
+        function renderPodcasts() {
+          podcastListEl.innerHTML = '';
+          data.podcasts.forEach(p => {
+            const li = document.createElement('li');
+            li.textContent = p.title;
+            li.className = 'podcast-item' + (selectedPodcastId === p.id ? ' active' : '');
+            li.addEventListener('click', () => {
+              selectedPodcastId = p.id;
+              renderPodcasts();
+              renderEpisodes();
+            });
+            podcastListEl.appendChild(li);
+          });
+        }
+        function renderEpisodes() {
+          episodeContainer.innerHTML = '';
+          const episodes = data.episodes.filter(ep => selectedPodcastId === null || ep.podcast_id === selectedPodcastId);
+          episodes.sort((a, b) => (b.pub_date_iso || '').localeCompare(a.pub_date_iso || ''));
+          episodes.forEach(ep => {
+            const card = document.createElement('div');
+            card.className = 'episode-card';
+            const title = document.createElement('div');
+            title.className = 'episode-title';
+            title.textContent = ep.title;
+            const date = document.createElement('div');
+            date.className = 'episode-date';
+            date.textContent = ep.pub_date_iso ? new Date(ep.pub_date_iso).toLocaleDateString() : 'Unknown date';
+            const desc = document.createElement('div');
+            desc.innerHTML = ep.description;
+            card.appendChild(title);
+            card.appendChild(date);
+            card.appendChild(desc);
+            episodeContainer.appendChild(card);
+          });
+        }
+        // Initially select first podcast
+        if (data.podcasts.length > 0) {
+          selectedPodcastId = data.podcasts[0].id;
+        }
+        renderPodcasts();
+        renderEpisodes();
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById('episodeContainer').textContent = 'Failed to load dataset';
+      });
+    // Load docs
+    fetch('docs.html').then(res => res.text()).then(html => {
+      document.getElementById('docsContent').innerHTML = html;
+    }).catch(() => {
+      document.getElementById('docsContent').textContent = 'Failed to load documentation.';
+    });
+  </script>
+</body>
+</html>

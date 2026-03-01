@@ -1,0 +1,9 @@
+name,kind,country,lat,lon,aliases
+Berlin,city,DE,52.5200,13.4050,
+Verdun,city,FR,49.1590,5.3860,
+Paris,city,FR,48.8566,2.3522,
+Rom,city,IT,41.9028,12.4964,Rome
+Hamburg,city,DE,53.5511,9.9937,
+Kairo,city,EG,30.0444,31.2357,Cairo
+Bayern,region,DE,49.0000,11.5000,Bavaria
+Westsahara,region,EH,24.2155,-12.8858,Western Sahara

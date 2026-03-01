@@ -1,0 +1,91 @@
+# Manual curation overrides (fixture demo)
+# Keys are episode GUIDs.
+
+esh-001:
+  incident_type: assassination
+  primary_time:
+    kind: point
+    year: -44
+  primary_location:
+    name: Rom
+  persons:
+    - Julius Caesar
+    - Marcus Junius Brutus
+
+esh-002:
+  incident_type: disaster
+  primary_time:
+    kind: point
+    year: 1962
+  primary_location:
+    name: Hamburg
+  persons:
+    - Helmut Schmidt
+
+esh-003:
+  incident_type: revolution
+  primary_time:
+    kind: point
+    year: 2011
+  primary_location:
+    name: Kairo
+  persons:
+    - Mohamed ElBaradei
+
+# For DRIG fixtures
+
+drig-001:
+  incident_type: political_change
+  primary_time:
+    kind: point
+    year: 1989
+  primary_location:
+    name: Berlin
+  persons:
+    - Otto von Bismarck
+    - Helmut Kohl
+
+drig-002:
+  incident_type: battle
+  primary_time:
+    kind: point
+    year: 1916
+  primary_location:
+    name: Verdun
+  persons:
+    - Philippe Pétain
+
+drig-003:
+  incident_type: revolution
+  primary_time:
+    kind: point
+    year: 1789
+  primary_location:
+    name: Paris
+  persons:
+    - Maximilien Robespierre
+
+# Live snapshot (podcast.de ids)
+
+podcastde:701243987:
+  incident_type: politics
+  primary_location:
+    name: Bayern
+  persons:
+    - Jörg Biesler
+
+podcastde:699612289:
+  incident_type: conflict
+  primary_time:
+    kind: point
+    year: 1975
+  primary_location:
+    name: Westsahara
+  persons:
+    - Markus Dichmann
+    - Matthias von Hellfeld
+    - Alfred Hackensberger
+    - Esther Körfgen
+    - Azzadine Karioh
+    - Rachid Ouaissa
+    - Stefan Ehlert

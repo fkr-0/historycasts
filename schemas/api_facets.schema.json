@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "API Facets Response",
+  "type": "object",
+  "required": ["incident_types", "locations", "decades"],
+  "properties": {
+    "total_count": {"type": "integer", "minimum": 0},
+    "incident_types": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["incident_type", "count"],
+        "properties": {
+          "incident_type": {"type": "string"},
+          "count": {"type": "integer", "minimum": 0}
+        }
+      }
+    },
+    "locations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "country", "lat", "lon", "count"],
+        "properties": {
+          "name": {"type": ["string", "null"]},
+          "country": {"type": ["string", "null"]},
+          "lat": {"type": ["number", "null"]},
+          "lon": {"type": ["number", "null"]},
+          "count": {"type": "integer", "minimum": 0}
+        }
+      }
+    },
+    "decades": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["decade", "count"],
+        "properties": {
+          "decade": {"type": ["integer", "null"]},
+          "count": {"type": "integer", "minimum": 0}
+        }
+      }
+    }
+  }
+}

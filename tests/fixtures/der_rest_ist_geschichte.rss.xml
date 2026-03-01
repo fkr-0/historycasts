@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+  <channel>
+    <title>Der Rest ist Geschichte (Fixture)</title>
+    <link>https://example.invalid/der-rest-ist-geschichte</link>
+    <description>Fixture feed used for offline tests.</description>
+    <item>
+      <title>Berlin 1989: Mauerfall und die Menschen</title>
+      <guid>drig-001</guid>
+      <pubDate>Mon, 06 Nov 2023 10:00:00 GMT</pubDate>
+      <description><![CDATA[
+        In Berlin erzählt diese Folge vom Jahr 1989. Personen: Otto von Bismarck (als Rückblick) und Helmut Kohl.
+        Thema: Revolution und Politik. Mehr: https://example.invalid/ref
+      ]]></description>
+      <enclosure url="https://cdn.example.invalid/drig-001.mp3" length="123" type="audio/mpeg"/>
+      <itunes:duration>01:02:03</itunes:duration>
+    </item>
+    <item>
+      <title>Schlacht um Verdun 1916 – Krieg im Westen</title>
+      <guid>drig-002</guid>
+      <pubDate>Mon, 13 Nov 2023 10:00:00 GMT</pubDate>
+      <description><![CDATA[
+        Verdun 1916: eine der verheerendsten Schlachten des Ersten Weltkriegs. Personen: Philippe Pétain.
+        Zeitraum 1914-1918 als Kontext. Ort: Verdun, Frankreich.
+      ]]></description>
+      <enclosure url="https://cdn.example.invalid/drig-002.mp3" length="456" type="audio/mpeg"/>
+      <itunes:duration>00:58:11</itunes:duration>
+    </item>
+    <item>
+      <title>Paris 1789: Beginn der Französischen Revolution</title>
+      <guid>drig-003</guid>
+      <pubDate>Mon, 20 Nov 2023 10:00:00 GMT</pubDate>
+      <description><![CDATA[
+        Paris, 1789. Personen: Maximilien Robespierre.
+        Thema: Revolution.
+      ]]></description>
+      <enclosure url="https://cdn.example.invalid/drig-003.mp3" length="789" type="audio/mpeg"/>
+      <itunes:duration>00:44:20</itunes:duration>
+    </item>
+  </channel>
+</rss>
