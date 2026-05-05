@@ -31,6 +31,7 @@ export default function StackedBarTimeline(props: StackedBarTimelineProps): JSX.
     axisDensityK = 1,
   } = props
 
+  const rootRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const [dimensions, setDimensions] = useState({ width: 800, height: 400 })
 
@@ -71,17 +72,20 @@ export default function StackedBarTimeline(props: StackedBarTimelineProps): JSX.
 
   // Handle resize with ResizeObserver
   useEffect(() => {
-    const svgElement = svgRef.current
-    if (!svgElement) return
+    const rootElement = rootRef.current
+    if (!rootElement) return
 
     const resizeObserver = new ResizeObserver(entries => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect
-        setDimensions({ width, height })
+        setDimensions({
+          width: Math.max(320, Math.floor(width)),
+          height: Math.max(220, Math.floor(height)),
+        })
       }
     })
 
-    resizeObserver.observe(svgElement)
+    resizeObserver.observe(rootElement)
 
     return () => {
       resizeObserver.disconnect()
@@ -289,13 +293,21 @@ export default function StackedBarTimeline(props: StackedBarTimelineProps): JSX.
 
   return (
     <>
-      <svg
-        ref={svgRef}
-        width="100%"
-        height="100%"
-        style={{ display: "block", overflow: "visible", background: "transparent" }}
-        data-testid="stacked-bar-timeline"
-      />
+      <div ref={rootRef} style={{ width: "100%", height: "100%" }}>
+        <svg
+          ref={svgRef}
+          width={dimensions.width}
+          height={dimensions.height}
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "block",
+            overflow: "visible",
+            background: "transparent",
+          }}
+          data-testid="stacked-bar-timeline"
+        />
+      </div>
       {hoverData && (
         <div
           style={{

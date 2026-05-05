@@ -1,110 +1,107 @@
-import { useMemo, useState } from "react";
-import type { Dataset } from "./types";
-
-import AppFrame from "./components/app/AppFrame";
-import HeaderBar from "./components/app/HeaderBar";
-import DocModal, { type DocModalKind } from "./components/app/DocModal";
-import FiltersPanel from "./components/app/FiltersPanel";
-import CenterTabs from "./components/app/CenterTabs";
-import ExploreTab from "./components/app/ExploreTab";
-import EpisodeTab from "./components/app/EpisodeTab";
-import RightPanel from "./components/app/RightPanel";
-import ClusterDetail from "./components/ClusterDetail";
-import ClusterIndexView from "./components/clusters/ClusterIndexView";
-import IntentQueueButton from "./components/intent/IntentQueueButton";
-import IntentQueueModal from "./components/intent/IntentQueueModal";
-
-import { useDataset } from "./app/useDataset";
-import { useUrlFilters } from "./app/useUrlFilters";
-import { useSearch } from "./app/useSearch";
-import { useIntentQueue } from "./intent/useIntentQueue";
-
+import { useMemo, useState } from "react"
+import { useDataset } from "./app/useDataset"
+import { useSearch } from "./app/useSearch"
+import { useUrlFilters } from "./app/useUrlFilters"
+import AppFrame from "./components/app/AppFrame"
+import CenterTabs from "./components/app/CenterTabs"
+import DocModal, { type DocModalKind } from "./components/app/DocModal"
+import EpisodeTab from "./components/app/EpisodeTab"
+import ExploreTab from "./components/app/ExploreTab"
+import FiltersPanel from "./components/app/FiltersPanel"
+import HeaderBar from "./components/app/HeaderBar"
+import RightPanel from "./components/app/RightPanel"
+import ClusterDetail from "./components/ClusterDetail"
+import ClusterIndexView from "./components/clusters/ClusterIndexView"
+import IntentQueueButton from "./components/intent/IntentQueueButton"
+import IntentQueueModal from "./components/intent/IntentQueueModal"
+import { useIntentQueue } from "./intent/useIntentQueue"
 import {
   clampYearRange,
   filterEpisodesBase,
   filterEpisodesByYearRange,
   spanYearBounds,
-} from "./state/episodeFiltering";
-
+} from "./state/episodeFiltering"
 import {
+  type CenterTab,
   closeTab,
   ensureClusterTab,
   ensureEpisodeTab,
   makeInitialTabs,
   nextActiveTabAfterClose,
-  type CenterTab,
-} from "./state/tabs";
+} from "./state/tabs"
 
 export default function App(): JSX.Element {
-  const { dataset, err } = useDataset();
-  const { filters, setFilters } = useUrlFilters();
-  const search = useSearch(dataset);
+  const { dataset, err } = useDataset()
+  const { filters, setFilters } = useUrlFilters()
+  const search = useSearch(dataset)
 
-  const [selectedEpisodeId, setSelectedEpisodeId] = useState<number | null>(null);
-  const [tabs, setTabs] = useState<CenterTab[]>(() => makeInitialTabs());
-  const [activeTabId, setActiveTabId] = useState<CenterTab["id"]>("explore");
+  const [selectedEpisodeId, setSelectedEpisodeId] = useState<number | null>(null)
+  const [tabs, setTabs] = useState<CenterTab[]>(() => makeInitialTabs())
+  const [activeTabId, setActiveTabId] = useState<CenterTab["id"]>("explore")
 
-  const [leftCollapsed, setLeftCollapsed] = useState(false);
-  const [rightCollapsed, setRightCollapsed] = useState(false);
-  const [docModal, setDocModal] = useState<DocModalKind | null>(null);
-  const [intentModalOpen, setIntentModalOpen] = useState(false);
-  const intentQueue = useIntentQueue(dataset);
+  const [leftCollapsed, setLeftCollapsed] = useState(false)
+  const [rightCollapsed, setRightCollapsed] = useState(false)
+  const [docModal, setDocModal] = useState<DocModalKind | null>(null)
+  const [intentModalOpen, setIntentModalOpen] = useState(false)
+  const intentQueue = useIntentQueue(dataset)
 
   const episodesBase = useMemo(() => {
-    if (!dataset) return [];
-    return filterEpisodesBase(dataset, filters);
-  }, [dataset, filters]);
+    if (!dataset) return []
+    return filterEpisodesBase(dataset, filters)
+  }, [dataset, filters])
 
   const availableYearRange = useMemo<[number, number]>(() => {
-    if (!dataset) return [-500, new Date().getUTCFullYear()];
-    const ids = new Set(episodesBase.map((e) => e.id));
-    const bounds = spanYearBounds(dataset, ids);
-    return bounds ?? [-500, new Date().getUTCFullYear()];
-  }, [dataset, episodesBase]);
+    if (!dataset) return [-500, new Date().getUTCFullYear()]
+    const ids = new Set(episodesBase.map(e => e.id))
+    const bounds = spanYearBounds(dataset, ids)
+    return bounds ?? [-500, new Date().getUTCFullYear()]
+  }, [dataset, episodesBase])
 
   const activeYearRange = useMemo<[number, number]>(() => {
-    return clampYearRange(availableYearRange, filters.yearMin, filters.yearMax);
-  }, [availableYearRange, filters.yearMin, filters.yearMax]);
+    return clampYearRange(availableYearRange, filters.yearMin, filters.yearMax)
+  }, [availableYearRange, filters.yearMin, filters.yearMax])
 
   const filteredEpisodes = useMemo(() => {
-    if (!dataset) return [];
-    return filterEpisodesByYearRange(dataset, episodesBase, activeYearRange);
-  }, [dataset, episodesBase, activeYearRange]);
+    if (!dataset) return []
+    return filterEpisodesByYearRange(dataset, episodesBase, activeYearRange)
+  }, [dataset, episodesBase, activeYearRange])
 
-  const baseEpisodeIdSet = useMemo(() => new Set(episodesBase.map((e) => e.id)), [episodesBase]);
+  const baseEpisodeIdSet = useMemo(() => new Set(episodesBase.map(e => e.id)), [episodesBase])
 
   const sliderSpans = useMemo(() => {
-    if (!dataset) return [];
-    return dataset.spans.filter((s) => baseEpisodeIdSet.has(s.episode_id));
-  }, [dataset, baseEpisodeIdSet]);
+    if (!dataset) return []
+    return dataset.spans.filter(s => baseEpisodeIdSet.has(s.episode_id))
+  }, [dataset, baseEpisodeIdSet])
 
   function openEpisodeTab(episodeId: number) {
-    if (!dataset) return;
-    setSelectedEpisodeId(episodeId);
-    setTabs((prev) => ensureEpisodeTab(dataset, prev, episodeId));
-    setActiveTabId(`episode-${episodeId}`);
+    if (!dataset) return
+    setSelectedEpisodeId(episodeId)
+    setTabs(prev => ensureEpisodeTab(dataset, prev, episodeId))
+    setActiveTabId(`episode-${episodeId}`)
   }
 
   function openClusterTab(clusterId: number) {
-    if (!dataset) return;
-    setFilters((f) => ({ ...f, clusterId }));
-    setTabs((prev) => ensureClusterTab(dataset, prev, clusterId));
-    setActiveTabId(`cluster-${clusterId}`);
+    if (!dataset) return
+    setFilters(f => ({ ...f, clusterId }))
+    setTabs(prev => ensureClusterTab(dataset, prev, clusterId))
+    setActiveTabId(`cluster-${clusterId}`)
   }
 
   function handleCloseTab(tabId: CenterTab["id"]) {
-    setTabs((prev) => closeTab(prev, tabId));
-    setActiveTabId((active) => nextActiveTabAfterClose(active, tabId));
+    setTabs(prev => closeTab(prev, tabId))
+    setActiveTabId(active => nextActiveTabAfterClose(active, tabId))
   }
 
-  const activeTab = tabs.find((t) => t.id === activeTabId) ?? tabs[0];
+  const activeTab = tabs.find(t => t.id === activeTabId) ?? tabs[0]
 
-  if (err) return <div className="p-4">Error: {err}</div>;
-  if (!dataset) return <div className="p-4">Loading dataset…</div>;
+  if (err) return <div className="p-4">Error: {err}</div>
+  if (!dataset) return <div className="p-4">Loading dataset…</div>
 
   return (
     <>
       <AppFrame
+        leftCollapsed={leftCollapsed}
+        rightCollapsed={rightCollapsed}
         left={
           <FiltersPanel
             dataset={dataset}
@@ -126,10 +123,10 @@ export default function App(): JSX.Element {
               onSearchClear={search.clear}
               leftCollapsed={leftCollapsed}
               rightCollapsed={rightCollapsed}
-              onToggleLeft={() => setLeftCollapsed((v) => !v)}
-                onToggleRight={() => setRightCollapsed((v) => !v)}
-                onOpenReadme={() => setDocModal("readme")}
-                onOpenChangelog={() => setDocModal("changelog")}
+              onToggleLeft={() => setLeftCollapsed(v => !v)}
+              onToggleRight={() => setRightCollapsed(v => !v)}
+              onOpenReadme={() => setDocModal("readme")}
+              onOpenChangelog={() => setDocModal("changelog")}
               intentControls={
                 <IntentQueueButton
                   queued={intentQueue.queueCounts.queued}
@@ -143,17 +140,17 @@ export default function App(): JSX.Element {
             <CenterTabs
               tabs={tabs}
               activeTabId={activeTabId}
-              onActivate={(id) => {
-                setActiveTabId(id);
+              onActivate={id => {
+                setActiveTabId(id)
                 if (id.startsWith("episode-")) {
-                  const epId = Number(id.slice("episode-".length));
-                  if (Number.isFinite(epId)) setSelectedEpisodeId(epId);
+                  const epId = Number(id.slice("episode-".length))
+                  if (Number.isFinite(epId)) setSelectedEpisodeId(epId)
                 }
               }}
               onClose={handleCloseTab}
             />
 
-            <div className="min-h-0 flex-1">
+            <div className="min-h-0 flex-1 overflow-auto">
               {activeTab.id === "explore" ? (
                 <ExploreTab
                   dataset={dataset}
@@ -161,21 +158,21 @@ export default function App(): JSX.Element {
                   selectedEpisodeId={selectedEpisodeId}
                   onSelectEpisode={openEpisodeTab}
                   scrubYear={filters.year}
-                  onScrubYear={(y) => setFilters((f) => ({ ...f, year: y }))}
+                  onScrubYear={y => setFilters(f => ({ ...f, year: y }))}
                   availableYearRange={availableYearRange}
                   activeYearRange={activeYearRange}
                   sliderSpans={sliderSpans}
                   axisDensityK={filters.axisK}
                   topN={filters.topN}
-                  onChangeActiveYearRange={(next) =>
-                    setFilters((f) => ({ ...f, yearMin: next[0], yearMax: next[1] }))
+                  onChangeActiveYearRange={next =>
+                    setFilters(f => ({ ...f, yearMin: next[0], yearMax: next[1] }))
                   }
                 />
               ) : activeTab.id === "clusters" ? (
                 <ClusterIndexView
                   dataset={dataset}
                   sortBy={filters.clusterSort ?? "size"}
-                  onSortChange={(sort) => setFilters((f) => ({ ...f, clusterSort: sort }))}
+                  onSortChange={sort => setFilters(f => ({ ...f, clusterSort: sort }))}
                   onSelectCluster={openClusterTab}
                 />
               ) : (
@@ -200,8 +197,8 @@ export default function App(): JSX.Element {
                           ? [filters.clusterYearMin, filters.clusterYearMax]
                           : undefined
                       }
-                      onScopeChange={(scope) =>
-                        setFilters((f) => ({
+                      onScopeChange={scope =>
+                        setFilters(f => ({
                           ...f,
                           clusterTerm: scope.term,
                           clusterYearMin: scope.yearRange?.[0],
@@ -251,5 +248,5 @@ export default function App(): JSX.Element {
         />
       )}
     </>
-  );
+  )
 }

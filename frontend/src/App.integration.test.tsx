@@ -3,6 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import App from "./App"
 import type { Dataset } from "./types"
 
+vi.mock("./components/D3GazetteerMap", () => ({
+  default: () => <div data-testid="gazetteer-map-mock" />,
+}))
+
 vi.mock("./components/Timeline", () => ({
   default: () => <div data-testid="timeline-mock" />,
 }))

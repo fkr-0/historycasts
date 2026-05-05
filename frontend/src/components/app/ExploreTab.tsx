@@ -1,7 +1,7 @@
 import type { Dataset } from "../../types";
 import D3GazetteerMap from "../D3GazetteerMap";
+import EpisodeRasterTimeline from "../EpisodeRasterTimeline";
 import GraphIntervalSlider from "../GraphIntervalSlider";
-import { default as StackedBarTimeline } from "../StackedBarTimeline";
 
 export default function ExploreTab(props: {
   dataset: Dataset;
@@ -23,16 +23,13 @@ export default function ExploreTab(props: {
 }) {
   return (
     <div className="flex h-full flex-col gap-3">
-      <div className="min-h-[300px] flex-[0_0_56%] overflow-hidden rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)]/60 p-2">
-        <StackedBarTimeline
+      <div className="min-h-[300px] flex-[0_0_56%] overflow-hidden rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)]/60 p-2 pr-4">
+        <EpisodeRasterTimeline
           dataset={props.dataset}
           episodes={props.episodes}
           selectedEpisodeId={props.selectedEpisodeId}
           onSelectEpisode={props.onSelectEpisode}
-          scrubYear={props.scrubYear}
-          onScrubYear={props.onScrubYear}
           visibleYearRange={props.activeYearRange}
-          axisDensityK={props.axisDensityK}
         />
       </div>
 
@@ -44,7 +41,7 @@ export default function ExploreTab(props: {
         onChange={props.onChangeActiveYearRange}
       />
 
-      <div className="min-h-[260px] flex-1 overflow-hidden rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)]/60 p-2">
+      <div className="min-h-[320px] flex-1 overflow-visible rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)]/60 p-2">
         <D3GazetteerMap
           dataset={props.dataset}
           episodes={props.episodes}

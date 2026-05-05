@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { parseIsoYear } from "../utils/historicalDate"
 
 interface SpanLite {
   start_iso?: string
@@ -40,12 +41,12 @@ export default function GraphIntervalSlider(props: {
 
     for (const sp of spans) {
       if (!sp.start_iso || !sp.end_iso) continue
-      const s = new Date(sp.start_iso)
-      const e = new Date(sp.end_iso)
-      if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) continue
+      const sy = parseIsoYear(sp.start_iso)
+      const ey = parseIsoYear(sp.end_iso)
+      if (sy == null || ey == null) continue
 
-      const a = Math.min(s.getUTCFullYear(), e.getUTCFullYear())
-      const b = Math.max(s.getUTCFullYear(), e.getUTCFullYear())
+      const a = Math.min(sy, ey)
+      const b = Math.max(sy, ey)
       const dur = Math.max(1, b - a + 1)
 
       const lo = Math.max(a, minYear)

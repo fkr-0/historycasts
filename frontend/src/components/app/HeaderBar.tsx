@@ -18,6 +18,8 @@ export type HeaderBarProps = {
 };
 
 export default function HeaderBar(props: HeaderBarProps) {
+  const buildReportHref = new URL("docs/build-report.html", document.baseURI).pathname;
+
   return (
     <div className="sticky top-0 z-30 -mx-3 -mt-3 mb-3 border-b border-[color:var(--border)] bg-[color:var(--surface)]/90 p-3 backdrop-blur">
       <div className="flex flex-wrap items-center gap-2">
@@ -61,6 +63,14 @@ export default function HeaderBar(props: HeaderBarProps) {
           >
             CHANGELOG
           </button>
+          <a
+            href={buildReportHref}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface)] px-2 py-1 text-xs"
+          >
+            BUILD REPORT
+          </a>
           {props.intentControls}
           <button
             type="button"

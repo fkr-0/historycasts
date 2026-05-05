@@ -69,4 +69,30 @@ describe("episodeFiltering", () => {
     const res = filterEpisodesByYearRange(ds, base, [1400, 1700]);
     expect(res.map((e) => e.id)).toEqual([11]);
   });
+
+  test("future outlier spans are ignored in bounds and overlap checks", () => {
+    const ds = makeDataset();
+    ds.spans.push({
+      episode_id: 10,
+      start_iso: "231-01-01T00:00:00Z",
+      end_iso: "2336-12-31T00:00:00Z",
+    });
+
+    const bounds = spanYearBounds(ds, new Set([10, 11]));
+    expect(bounds).toEqual([100, 1600]);
+    expect(hasSpanInYearRange(ds, 10, [2200, 2400])).toBe(false);
+  });
+
+  test("extended ISO BCE years are included in bounds and overlap checks", () => {
+    const ds = makeDataset();
+    ds.spans.push({
+      episode_id: 10,
+      start_iso: "-0401-01-01",
+      end_iso: "-0380-12-31",
+    });
+
+    const bounds = spanYearBounds(ds, new Set([10, 11]));
+    expect(bounds).toEqual([-401, 1600]);
+    expect(hasSpanInYearRange(ds, 10, [-420, -390])).toBe(true);
+  });
 });

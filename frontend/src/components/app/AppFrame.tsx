@@ -1,17 +1,21 @@
-import { Group, Panel, Separator } from "react-resizable-panels";
+import { Group, Panel, Separator } from "react-resizable-panels"
 
 export default function AppFrame(props: {
-  left: React.ReactNode;
-  center: React.ReactNode;
-  right: React.ReactNode;
+  left: React.ReactNode
+  center: React.ReactNode
+  right: React.ReactNode
+  leftCollapsed?: boolean
+  rightCollapsed?: boolean
 }) {
   return (
     <div className="h-screen">
       <Group direction="horizontal">
         <Panel
-          defaultSize="22%"
-          minSize="12%"
-          maxSize="42%"
+          defaultSize={props.leftCollapsed ? 4 : 22}
+          minSize={props.leftCollapsed ? 4 : 12}
+          maxSize={props.leftCollapsed ? 4 : 42}
+          collapsible
+          collapsedSize={4}
           className="overflow-auto border-r border-[color:var(--border)] bg-[color:var(--surface)]/92 p-3"
         >
           {props.left}
@@ -26,14 +30,16 @@ export default function AppFrame(props: {
         <Separator className="w-1 cursor-ew-resize bg-[color:var(--border)] transition-colors hover:bg-[color:var(--accent)]" />
 
         <Panel
-          defaultSize="25%"
-          minSize="12%"
-          maxSize="45%"
+          defaultSize={props.rightCollapsed ? 4 : 25}
+          minSize={props.rightCollapsed ? 4 : 12}
+          maxSize={props.rightCollapsed ? 4 : 45}
+          collapsible
+          collapsedSize={4}
           className="overflow-hidden border-l border-[color:var(--border)] bg-[color:var(--surface)]/92 p-4"
         >
           {props.right}
         </Panel>
       </Group>
     </div>
-  );
+  )
 }
