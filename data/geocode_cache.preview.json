@@ -1,0 +1,48 @@
+{
+  "apple|Apple|city": {
+    "lat": 42.7643519,
+    "lon": -84.5147314,
+    "provider": "nominatim"
+  },
+  "campfirefm|CampfireFM!|city": null,
+  "england|England|city": {
+    "lat": 52.5310214,
+    "lon": -1.2649062,
+    "provider": "nominatim"
+  },
+  "europa|Europa|city": {
+    "lat": 51.0,
+    "lon": 10.0,
+    "provider": "nominatim"
+  },
+  "europe|Europe|region": {
+    "lat": 51.0,
+    "lon": 10.0,
+    "provider": "nominatim"
+  },
+  "folgen|Folgen|city": {
+    "lat": 50.8028918,
+    "lon": 12.3234742,
+    "provider": "nominatim"
+  },
+  "france|France|country": {
+    "lat": 46.603354,
+    "lon": 1.8883335,
+    "provider": "nominatim"
+  },
+  "germany|Germany|country": {
+    "lat": 51.1638175,
+    "lon": 10.4478313,
+    "provider": "nominatim"
+  },
+  "instagram|Instagram|city": {
+    "lat": 25.2165926,
+    "lon": 55.2815529,
+    "provider": "nominatim"
+  },
+  "united states|United States|country": {
+    "lat": 39.7837304,
+    "lon": -100.445882,
+    "provider": "nominatim"
+  }
+}

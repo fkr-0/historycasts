@@ -1,0 +1,850 @@
+{
+  "db_path": "active.db",
+  "counts": {
+    "bad_places": 0,
+    "bad_entities": 7,
+    "bad_keywords": 132,
+    "description_candidates": 395,
+    "ad_link_samples": 20
+  },
+  "bad_places": [],
+  "bad_entities": [
+    {
+      "id": 2357,
+      "episode_id": 165,
+      "title": "GAG393: Die Schlacht von Zama",
+      "name": "In der Folge",
+      "kind": "person"
+    },
+    {
+      "id": 3556,
+      "episode_id": 319,
+      "title": "GAG250: Eine kurze Geschichte der Bluttransfusion",
+      "name": "In der Folge",
+      "kind": "person"
+    },
+    {
+      "id": 3592,
+      "episode_id": 327,
+      "title": "GAG242: Eine kurze Geschichte der Olympischen Spiele (der Neuzeit)",
+      "name": "In der Folge",
+      "kind": "person"
+    },
+    {
+      "id": 3799,
+      "episode_id": 373,
+      "title": "GAG197: Das kurzlebige Königreich Finnland – und ein deutscher Adliger auf dem Thron",
+      "name": "In der Folge",
+      "kind": "person"
+    },
+    {
+      "id": 3875,
+      "episode_id": 387,
+      "title": "GAG184: Katharina Kepler – ein Hexenprozess in der Frühen Neuzeit",
+      "name": "In der Folge",
+      "kind": "person"
+    },
+    {
+      "id": 3920,
+      "episode_id": 399,
+      "title": "GAG174: Harriet Tubman und die Underground Railroad",
+      "name": "In der Folge",
+      "kind": "person"
+    },
+    {
+      "id": 4200,
+      "episode_id": 469,
+      "title": "GAG109: Der Lotterieaufstand in Albanien",
+      "name": "In der Folge",
+      "kind": "person"
+    }
+  ],
+  "bad_keywords": [
+    {
+      "id": 24,
+      "phrase": "Apple Podcasts",
+      "episode_count": 50
+    },
+    {
+      "id": 2856,
+      "phrase": "Podcastplattform Panoptikum",
+      "episode_count": 26
+    },
+    {
+      "id": 9685,
+      "phrase": "Hosted on Acast See",
+      "episode_count": 19
+    },
+    {
+      "id": 9686,
+      "phrase": "acast.com/privacy for more information",
+      "episode_count": 19
+    },
+    {
+      "id": 10136,
+      "phrase": "on Acast See acast.com/privacy",
+      "episode_count": 18
+    },
+    {
+      "id": 9733,
+      "phrase": "See acast.com/privacy for more",
+      "episode_count": 14
+    },
+    {
+      "id": 10566,
+      "phrase": "Instagram @wasbishergeschah.podcast Quellen",
+      "episode_count": 13
+    },
+    {
+      "id": 9853,
+      "phrase": "Instagram @wasbishergeschah.podcast Quellen The",
+      "episode_count": 9
+    },
+    {
+      "id": 10484,
+      "phrase": "Instagram @wasbishergeschah.podcast Quellen Martin",
+      "episode_count": 4
+    },
+    {
+      "id": 10209,
+      "phrase": "Instagram @wasbishergeschah.podcast Quellen Kleopatra",
+      "episode_count": 3
+    },
+    {
+      "id": 10861,
+      "phrase": "Instagram @wasbishergeschah.podcast Quellen Embers",
+      "episode_count": 3
+    },
+    {
+      "id": 11685,
+      "phrase": "Instagram @wasbishergeschah.podcast Quellen Erinnerungen",
+      "episode_count": 3
+    },
+    {
+      "id": 3952,
+      "phrase": "Euer ganz eigenes Podcasthörer:innenprofil",
+      "episode_count": 2
+    },
+    {
+      "id": 9756,
+      "phrase": "Amerika Hosted on Acast",
+      "episode_count": 2
+    },
+    {
+      "id": 9770,
+      "phrase": "Instagram @wasbishergeschah.podcast Quellen Michael",
+      "episode_count": 2
+    },
+    {
+      "id": 10252,
+      "phrase": "Instagram @wasbishergeschah.podcast Quellen Tad",
+      "episode_count": 2
+    },
+    {
+      "id": 10810,
+      "phrase": "Thomas Sparr Hosted on",
+      "episode_count": 2
+    },
+    {
+      "id": 10978,
+      "phrase": "Johannes Wilms Hosted on",
+      "episode_count": 2
+    },
+    {
+      "id": 10980,
+      "phrase": "Instagram @wasbishergeschah.podcast Quellen Napoleon",
+      "episode_count": 2
+    },
+    {
+      "id": 11429,
+      "phrase": "Westrom Hosted on Acast",
+      "episode_count": 2
+    }
+  ],
+  "link_domain_summary": [
+    {
+      "domain": "gadg.fm",
+      "count": 444,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "linktr.ee",
+      "count": 305,
+      "ad_suspect": 305,
+      "source_suspect": 0
+    },
+    {
+      "domain": "steady.page",
+      "count": 144,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "geschichte.shop",
+      "count": 99,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "seven.one",
+      "count": 81,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "joincampfire.fm",
+      "count": 42,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "panoptikum.io",
+      "count": 38,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "podcasts.apple.com",
+      "count": 27,
+      "ad_suspect": 27,
+      "source_suspect": 0
+    },
+    {
+      "domain": "geschichte.fm",
+      "count": 19,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "youtube.com",
+      "count": 19,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "steadyhq.com",
+      "count": 19,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "doi.org",
+      "count": 16,
+      "ad_suspect": 0,
+      "source_suspect": 16
+    },
+    {
+      "domain": "piper.de",
+      "count": 13,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "ardaudiothek.de",
+      "count": 11,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "contrapromotion.com",
+      "count": 10,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "archive.org",
+      "count": 8,
+      "ad_suspect": 0,
+      "source_suspect": 8
+    },
+    {
+      "domain": "de.wikipedia.org",
+      "count": 7,
+      "ad_suspect": 0,
+      "source_suspect": 7
+    },
+    {
+      "domain": "imdb.com",
+      "count": 6,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "commons.wikimedia.org",
+      "count": 6,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "wolke.geschichte.fm",
+      "count": 4,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "youtu.be",
+      "count": 4,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "br.de",
+      "count": 4,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "open.spotify.com",
+      "count": 4,
+      "ad_suspect": 4,
+      "source_suspect": 0
+    },
+    {
+      "domain": "twitter.com",
+      "count": 4,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "minkorrekt.de",
+      "count": 3,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "jstor.org",
+      "count": 3,
+      "ad_suspect": 0,
+      "source_suspect": 3
+    },
+    {
+      "domain": "hearandnowfestival.de",
+      "count": 3,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "bbc.co.uk",
+      "count": 3,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "sueddeutsche.de",
+      "count": 2,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "projekt-gutenberg.org",
+      "count": 2,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "rasenfunk.de",
+      "count": 2,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "bbc.com",
+      "count": 2,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "bsb-muenchen.de",
+      "count": 2,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "historytoday.com",
+      "count": 2,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "ndr.de",
+      "count": 2,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "instagram.com",
+      "count": 2,
+      "ad_suspect": 2,
+      "source_suspect": 0
+    },
+    {
+      "domain": "lenekieberl.com",
+      "count": 2,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "freakonomics.com",
+      "count": 2,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "herstorypod.de",
+      "count": 2,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "art19.com",
+      "count": 2,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "britishmuseum.org",
+      "count": 1,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "post.geschichte.fm",
+      "count": 1,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "apps.apple.com",
+      "count": 1,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "play.google.com",
+      "count": 1,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "freud-museum.at",
+      "count": 1,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "loc.gov",
+      "count": 1,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "shadydetectives.com",
+      "count": 1,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "hamburg.de",
+      "count": 1,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "anno.onb.ac.at",
+      "count": 1,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "imslp.org",
+      "count": 1,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "australian.museum",
+      "count": 1,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "africanstudieslibrary.org",
+      "count": 1,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "patents.google.com",
+      "count": 1,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "zeitgeschichte-online.de",
+      "count": 1,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "leneslinien.com",
+      "count": 1,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "suselichtenberger.com",
+      "count": 1,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "plus-ultra.podigee.io",
+      "count": 1,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "stormgrass.com",
+      "count": 1,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "spektrum.de",
+      "count": 1,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    },
+    {
+      "domain": "studio-link.de",
+      "count": 1,
+      "ad_suspect": 0,
+      "source_suspect": 0
+    }
+  ],
+  "ad_link_samples": [
+    {
+      "id": 2,
+      "episode_id": 1,
+      "title": "GAG544: HB05 – Eine Weltreise auf vier Rädern, mit drei Gängen, fünfzig PS und 128 Eiern & Zar und Zimmermann",
+      "url": "https://linktr.ee/GeschichtenausderGeschichte",
+      "link_type": "advert",
+      "reason": "ad-suspect-domain"
+    },
+    {
+      "id": 11,
+      "episode_id": 2,
+      "title": "GAG543: Vom Tiegel in den Fluss",
+      "url": "https://linktr.ee/GeschichtenausderGeschichte",
+      "link_type": "advert",
+      "reason": "ad-suspect-domain"
+    },
+    {
+      "id": 20,
+      "episode_id": 3,
+      "title": "GAG542: Eine Kaiserin der Franzosen",
+      "url": "https://linktr.ee/GeschichtenausderGeschichte",
+      "link_type": "advert",
+      "reason": "ad-suspect-domain"
+    },
+    {
+      "id": 29,
+      "episode_id": 4,
+      "title": "GAG541: Eine kleine Geschichte des Sushi",
+      "url": "https://linktr.ee/GeschichtenausderGeschichte",
+      "link_type": "advert",
+      "reason": "ad-suspect-domain"
+    },
+    {
+      "id": 35,
+      "episode_id": 5,
+      "title": "GAG540: Schwarze Kammern und die Große Chiffre",
+      "url": "https://linktr.ee/GeschichtenausderGeschichte",
+      "link_type": "advert",
+      "reason": "ad-suspect-domain"
+    },
+    {
+      "id": 40,
+      "episode_id": 6,
+      "title": "GAG539: Der Mongolensturm und das Jahrzehnt der Witwen",
+      "url": "https://linktr.ee/GeschichtenausderGeschichte",
+      "link_type": "advert",
+      "reason": "ad-suspect-domain"
+    },
+    {
+      "id": 45,
+      "episode_id": 7,
+      "title": "GAG538: Das längste Gebirge der Welt",
+      "url": "https://linktr.ee/GeschichtenausderGeschichte",
+      "link_type": "advert",
+      "reason": "ad-suspect-domain"
+    },
+    {
+      "id": 51,
+      "episode_id": 8,
+      "title": "GAG537: Tinte, Blut und Eisen – Fontane an der Front",
+      "url": "https://linktr.ee/GeschichtenausderGeschichte",
+      "link_type": "advert",
+      "reason": "ad-suspect-domain"
+    },
+    {
+      "id": 59,
+      "episode_id": 9,
+      "title": "GAG536: Eine gescheiterte Flucht über den Atlantik",
+      "url": "https://linktr.ee/GeschichtenausderGeschichte",
+      "link_type": "advert",
+      "reason": "ad-suspect-domain"
+    },
+    {
+      "id": 69,
+      "episode_id": 10,
+      "title": "GAG535: Das Jahr 536 und die Spätantike Kleine Eiszeit",
+      "url": "https://linktr.ee/GeschichtenausderGeschichte",
+      "link_type": "advert",
+      "reason": "ad-suspect-domain"
+    },
+    {
+      "id": 79,
+      "episode_id": 11,
+      "title": "GAG534: Wie der Walzer zum Walzer wurde",
+      "url": "https://linktr.ee/GeschichtenausderGeschichte",
+      "link_type": "advert",
+      "reason": "ad-suspect-domain"
+    },
+    {
+      "id": 83,
+      "episode_id": 12,
+      "title": "GAG533: Der Bericht des Wenamun",
+      "url": "https://linktr.ee/GeschichtenausderGeschichte",
+      "link_type": "advert",
+      "reason": "ad-suspect-domain"
+    },
+    {
+      "id": 88,
+      "episode_id": 13,
+      "title": "GAG532: Federn",
+      "url": "https://podcasts.apple.com/de/podcast/tulus-die-geschichte-eines-restaurants/id1855531361",
+      "link_type": "external",
+      "reason": "ad-suspect-domain"
+    },
+    {
+      "id": 89,
+      "episode_id": 13,
+      "title": "GAG532: Federn",
+      "url": "https://linktr.ee/GeschichtenausderGeschichte",
+      "link_type": "advert",
+      "reason": "ad-suspect-domain"
+    },
+    {
+      "id": 97,
+      "episode_id": 14,
+      "title": "GAG531: Antonin Carême und die Geburt der modernen französischen Küche",
+      "url": "https://linktr.ee/GeschichtenausderGeschichte",
+      "link_type": "advert",
+      "reason": "ad-suspect-domain"
+    },
+    {
+      "id": 106,
+      "episode_id": 15,
+      "title": "GAG530: Vanillin und die Königin der Gewürze",
+      "url": "https://linktr.ee/GeschichtenausderGeschichte",
+      "link_type": "advert",
+      "reason": "ad-suspect-domain"
+    },
+    {
+      "id": 115,
+      "episode_id": 16,
+      "title": "GAG529: Das Schicksal der Geschwister Freud",
+      "url": "https://linktr.ee/GeschichtenausderGeschichte",
+      "link_type": "advert",
+      "reason": "ad-suspect-domain"
+    },
+    {
+      "id": 125,
+      "episode_id": 17,
+      "title": "GAG528: Die Katalanische Kompanie",
+      "url": "https://linktr.ee/GeschichtenausderGeschichte",
+      "link_type": "advert",
+      "reason": "ad-suspect-domain"
+    },
+    {
+      "id": 138,
+      "episode_id": 18,
+      "title": "GAG527: Botanik, Baret und Bougainville",
+      "url": "https://linktr.ee/GeschichtenausderGeschichte",
+      "link_type": "advert",
+      "reason": "ad-suspect-domain"
+    },
+    {
+      "id": 146,
+      "episode_id": 19,
+      "title": "GAG526: Nanga Parbat Schicksalsberg",
+      "url": "https://linktr.ee/GeschichtenausderGeschichte",
+      "link_type": "advert",
+      "reason": "ad-suspect-domain"
+    }
+  ],
+  "description_candidates": [
+    {
+      "episode_id": 1,
+      "title": "GAG544: HB05 – Eine Weltreise auf vier Rädern, mit drei Gängen, fünfzig PS und 128 Eiern & Zar und Zimmermann",
+      "matched_lines": [
+        "Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.",
+        "Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!"
+      ]
+    },
+    {
+      "episode_id": 2,
+      "title": "GAG543: Vom Tiegel in den Fluss",
+      "matched_lines": [
+        "Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.",
+        "Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!"
+      ]
+    },
+    {
+      "episode_id": 3,
+      "title": "GAG542: Eine Kaiserin der Franzosen",
+      "matched_lines": [
+        "Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.",
+        "Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!"
+      ]
+    },
+    {
+      "episode_id": 4,
+      "title": "GAG541: Eine kleine Geschichte des Sushi",
+      "matched_lines": [
+        "Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.",
+        "Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!"
+      ]
+    },
+    {
+      "episode_id": 5,
+      "title": "GAG540: Schwarze Kammern und die Große Chiffre",
+      "matched_lines": [
+        "Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.",
+        "Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!"
+      ]
+    },
+    {
+      "episode_id": 6,
+      "title": "GAG539: Der Mongolensturm und das Jahrzehnt der Witwen",
+      "matched_lines": [
+        "Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.",
+        "Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!"
+      ]
+    },
+    {
+      "episode_id": 7,
+      "title": "GAG538: Das längste Gebirge der Welt",
+      "matched_lines": [
+        "Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.",
+        "Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!"
+      ]
+    },
+    {
+      "episode_id": 8,
+      "title": "GAG537: Tinte, Blut und Eisen – Fontane an der Front",
+      "matched_lines": [
+        "Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.",
+        "Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!"
+      ]
+    },
+    {
+      "episode_id": 9,
+      "title": "GAG536: Eine gescheiterte Flucht über den Atlantik",
+      "matched_lines": [
+        "Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.",
+        "Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!"
+      ]
+    },
+    {
+      "episode_id": 10,
+      "title": "GAG535: Das Jahr 536 und die Spätantike Kleine Eiszeit",
+      "matched_lines": [
+        "Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.",
+        "Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!"
+      ]
+    },
+    {
+      "episode_id": 11,
+      "title": "GAG534: Wie der Walzer zum Walzer wurde",
+      "matched_lines": [
+        "Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.",
+        "Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!"
+      ]
+    },
+    {
+      "episode_id": 12,
+      "title": "GAG533: Der Bericht des Wenamun",
+      "matched_lines": [
+        "Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.",
+        "Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!"
+      ]
+    },
+    {
+      "episode_id": 13,
+      "title": "GAG532: Federn",
+      "matched_lines": [
+        "Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.",
+        "Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!"
+      ]
+    },
+    {
+      "episode_id": 14,
+      "title": "GAG531: Antonin Carême und die Geburt der modernen französischen Küche",
+      "matched_lines": [
+        "Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.",
+        "Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!"
+      ]
+    },
+    {
+      "episode_id": 15,
+      "title": "GAG530: Vanillin und die Königin der Gewürze",
+      "matched_lines": [
+        "Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.",
+        "Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!"
+      ]
+    },
+    {
+      "episode_id": 16,
+      "title": "GAG529: Das Schicksal der Geschwister Freud",
+      "matched_lines": [
+        "Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.",
+        "Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!"
+      ]
+    },
+    {
+      "episode_id": 17,
+      "title": "GAG528: Die Katalanische Kompanie",
+      "matched_lines": [
+        "Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.",
+        "Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!"
+      ]
+    },
+    {
+      "episode_id": 18,
+      "title": "GAG527: Botanik, Baret und Bougainville",
+      "matched_lines": [
+        "Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.",
+        "Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!"
+      ]
+    },
+    {
+      "episode_id": 19,
+      "title": "GAG526: Nanga Parbat Schicksalsberg",
+      "matched_lines": [
+        "Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.",
+        "Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!"
+      ]
+    },
+    {
+      "episode_id": 20,
+      "title": "GAG525: HB04 - Tödliche Abkürzung & Die Seekuh, die kam und verschwand",
+      "matched_lines": [
+        "Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.",
+        "Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!"
+      ]
+    }
+  ]
+}
