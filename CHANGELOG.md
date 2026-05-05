@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+### Added
+- Added static build report artifacts at `frontend/dist/docs/build-report.html` and `build-report.json` during `podcast-atlas build-static`.
+- Added a `BUILD REPORT` header link in the web app next to `CHANGELOG`.
+
+### Changed
+- Changed GitHub Pages deployment to publish `frontend/dist` directly (web app only), instead of the custom multi-folder `pages/` bundle.
+- Changed Pages web build base path from `/<repo>/app/` to `/<repo>/` for direct dist hosting.
+
+### Fixed
+- Fixed dataset loading in the web app to resolve `dataset.json` from the deployed base path.
+- Fixed docs modal iframe URLs to resolve from the deployed base path (project Pages compatible).
+
 ## [0.3.0] - 2026-03-01
 
 ### Added
