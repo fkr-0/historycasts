@@ -1,0 +1,134 @@
+# Data Quality Review
+
+- DB: `active.db`
+- Bad places (sampled): 0
+- Bad entities (sampled): 7
+- Bad keywords (sampled): 132
+- Description candidates (sampled): 395
+
+## Suspicious places
+
+## Suspicious entities
+- entity_id=2357 episode_id=165 kind=person name=`In der Folge` | GAG393: Die Schlacht von Zama
+- entity_id=3556 episode_id=319 kind=person name=`In der Folge` | GAG250: Eine kurze Geschichte der Bluttransfusion
+- entity_id=3592 episode_id=327 kind=person name=`In der Folge` | GAG242: Eine kurze Geschichte der Olympischen Spiele (der Neuzeit)
+- entity_id=3799 episode_id=373 kind=person name=`In der Folge` | GAG197: Das kurzlebige Königreich Finnland – und ein deutscher Adliger auf dem Thron
+- entity_id=3875 episode_id=387 kind=person name=`In der Folge` | GAG184: Katharina Kepler – ein Hexenprozess in der Frühen Neuzeit
+- entity_id=3920 episode_id=399 kind=person name=`In der Folge` | GAG174: Harriet Tubman und die Underground Railroad
+- entity_id=4200 episode_id=469 kind=person name=`In der Folge` | GAG109: Der Lotterieaufstand in Albanien
+
+## Suspicious keywords
+- keyword_id=24 phrase=`Apple Podcasts` episode_count=50
+- keyword_id=2856 phrase=`Podcastplattform Panoptikum` episode_count=26
+- keyword_id=9685 phrase=`Hosted on Acast See` episode_count=19
+- keyword_id=9686 phrase=`acast.com/privacy for more information` episode_count=19
+- keyword_id=10136 phrase=`on Acast See acast.com/privacy` episode_count=18
+- keyword_id=9733 phrase=`See acast.com/privacy for more` episode_count=14
+- keyword_id=10566 phrase=`Instagram @wasbishergeschah.podcast Quellen` episode_count=13
+- keyword_id=9853 phrase=`Instagram @wasbishergeschah.podcast Quellen The` episode_count=9
+- keyword_id=10484 phrase=`Instagram @wasbishergeschah.podcast Quellen Martin` episode_count=4
+- keyword_id=10209 phrase=`Instagram @wasbishergeschah.podcast Quellen Kleopatra` episode_count=3
+- keyword_id=10861 phrase=`Instagram @wasbishergeschah.podcast Quellen Embers` episode_count=3
+- keyword_id=11685 phrase=`Instagram @wasbishergeschah.podcast Quellen Erinnerungen` episode_count=3
+- keyword_id=3952 phrase=`Euer ganz eigenes Podcasthörer:innenprofil` episode_count=2
+- keyword_id=9756 phrase=`Amerika Hosted on Acast` episode_count=2
+- keyword_id=9770 phrase=`Instagram @wasbishergeschah.podcast Quellen Michael` episode_count=2
+- keyword_id=10252 phrase=`Instagram @wasbishergeschah.podcast Quellen Tad` episode_count=2
+- keyword_id=10810 phrase=`Thomas Sparr Hosted on` episode_count=2
+- keyword_id=10978 phrase=`Johannes Wilms Hosted on` episode_count=2
+- keyword_id=10980 phrase=`Instagram @wasbishergeschah.podcast Quellen Napoleon` episode_count=2
+- keyword_id=11429 phrase=`Westrom Hosted on Acast` episode_count=2
+
+## Link domain summary (top)
+- `gadg.fm` count=444 ad_suspect=0 source_suspect=0
+- `linktr.ee` count=305 ad_suspect=305 source_suspect=0
+- `steady.page` count=144 ad_suspect=0 source_suspect=0
+- `geschichte.shop` count=99 ad_suspect=0 source_suspect=0
+- `seven.one` count=81 ad_suspect=0 source_suspect=0
+- `joincampfire.fm` count=42 ad_suspect=0 source_suspect=0
+- `panoptikum.io` count=38 ad_suspect=0 source_suspect=0
+- `podcasts.apple.com` count=27 ad_suspect=27 source_suspect=0
+- `geschichte.fm` count=19 ad_suspect=0 source_suspect=0
+- `youtube.com` count=19 ad_suspect=0 source_suspect=0
+- `steadyhq.com` count=19 ad_suspect=0 source_suspect=0
+- `doi.org` count=16 ad_suspect=0 source_suspect=16
+- `piper.de` count=13 ad_suspect=0 source_suspect=0
+- `ardaudiothek.de` count=11 ad_suspect=0 source_suspect=0
+- `contrapromotion.com` count=10 ad_suspect=0 source_suspect=0
+- `archive.org` count=8 ad_suspect=0 source_suspect=8
+- `de.wikipedia.org` count=7 ad_suspect=0 source_suspect=7
+- `imdb.com` count=6 ad_suspect=0 source_suspect=0
+- `commons.wikimedia.org` count=6 ad_suspect=0 source_suspect=0
+- `wolke.geschichte.fm` count=4 ad_suspect=0 source_suspect=0
+- `youtu.be` count=4 ad_suspect=0 source_suspect=0
+- `br.de` count=4 ad_suspect=0 source_suspect=0
+- `open.spotify.com` count=4 ad_suspect=4 source_suspect=0
+- `twitter.com` count=4 ad_suspect=0 source_suspect=0
+- `minkorrekt.de` count=3 ad_suspect=0 source_suspect=0
+- `jstor.org` count=3 ad_suspect=0 source_suspect=3
+- `hearandnowfestival.de` count=3 ad_suspect=0 source_suspect=0
+- `bbc.co.uk` count=3 ad_suspect=0 source_suspect=0
+- `sueddeutsche.de` count=2 ad_suspect=0 source_suspect=0
+- `projekt-gutenberg.org` count=2 ad_suspect=0 source_suspect=0
+
+## Description boilerplate candidates
+- episode_id=1 | GAG544: HB05 – Eine Weltreise auf vier Rädern, mit drei Gängen, fünfzig PS und 128 Eiern & Zar und Zimmermann
+  - Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.
+  - Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!
+- episode_id=2 | GAG543: Vom Tiegel in den Fluss
+  - Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.
+  - Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!
+- episode_id=3 | GAG542: Eine Kaiserin der Franzosen
+  - Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.
+  - Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!
+- episode_id=4 | GAG541: Eine kleine Geschichte des Sushi
+  - Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.
+  - Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!
+- episode_id=5 | GAG540: Schwarze Kammern und die Große Chiffre
+  - Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.
+  - Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!
+- episode_id=6 | GAG539: Der Mongolensturm und das Jahrzehnt der Witwen
+  - Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.
+  - Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!
+- episode_id=7 | GAG538: Das längste Gebirge der Welt
+  - Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.
+  - Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!
+- episode_id=8 | GAG537: Tinte, Blut und Eisen – Fontane an der Front
+  - Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.
+  - Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!
+- episode_id=9 | GAG536: Eine gescheiterte Flucht über den Atlantik
+  - Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.
+  - Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!
+- episode_id=10 | GAG535: Das Jahr 536 und die Spätantike Kleine Eiszeit
+  - Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.
+  - Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!
+- episode_id=11 | GAG534: Wie der Walzer zum Walzer wurde
+  - Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.
+  - Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!
+- episode_id=12 | GAG533: Der Bericht des Wenamun
+  - Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.
+  - Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!
+- episode_id=13 | GAG532: Federn
+  - Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.
+  - Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!
+- episode_id=14 | GAG531: Antonin Carême und die Geburt der modernen französischen Küche
+  - Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.
+  - Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!
+- episode_id=15 | GAG530: Vanillin und die Königin der Gewürze
+  - Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.
+  - Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!
+- episode_id=16 | GAG529: Das Schicksal der Geschwister Freud
+  - Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.
+  - Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!
+- episode_id=17 | GAG528: Die Katalanische Kompanie
+  - Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.
+  - Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!
+- episode_id=18 | GAG527: Botanik, Baret und Bougainville
+  - Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.
+  - Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!
+- episode_id=19 | GAG526: Nanga Parbat Schicksalsberg
+  - Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.
+  - Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!
+- episode_id=20 | GAG525: HB04 - Tödliche Abkürzung & Die Seekuh, die kam und verschwand
+  - Wir freuen uns, wenn ihr den Podcast bei Apple Podcasts oder wo auch immer dies möglich ist rezensiert oder bewertet.
+  - Wir freuen uns auch immer, wenn ihr euren Freundinnen und Freunden, Kolleginnen und Kollegen oder sogar Nachbarinnen und Nachbarn von uns erzählt!
