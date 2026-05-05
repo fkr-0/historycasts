@@ -1,5 +1,21 @@
 import type { Dataset } from "../types";
 import type { Filters } from "../urlState";
+import { parseIsoYear } from "../utils/historicalDate";
+
+const MIN_REASONABLE_YEAR = -4000;
+const MAX_REASONABLE_YEAR = new Date().getUTCFullYear() + 1;
+
+function spanYears(span: { start_iso?: string; end_iso?: string }): [number, number] | null {
+  if (!span.start_iso || !span.end_iso) return null;
+  const a = parseIsoYear(span.start_iso);
+  const b = parseIsoYear(span.end_iso);
+  if (a == null || b == null) return null;
+
+  const lo = Math.min(a, b);
+  const hi = Math.max(a, b);
+  if (lo < MIN_REASONABLE_YEAR || hi > MAX_REASONABLE_YEAR) return null;
+  return [lo, hi];
+}
 
 /**
  * True iff episode has at least one span overlapping [minYear, maxYear].
@@ -14,14 +30,9 @@ export function hasSpanInYearRange(
 
   for (const s of dataset.spans) {
     if (s.episode_id !== episodeId) continue;
-    if (!s.start_iso || !s.end_iso) continue;
-
-    const a = new Date(s.start_iso).getUTCFullYear();
-    const b = new Date(s.end_iso).getUTCFullYear();
-    if (Number.isNaN(a) || Number.isNaN(b)) continue;
-
-    const lo = Math.min(a, b);
-    const hi = Math.max(a, b);
+    const years = spanYears(s);
+    if (!years) continue;
+    const [lo, hi] = years;
     if (hi >= minYear && lo <= maxYear) return true;
   }
   return false;
@@ -40,11 +51,9 @@ export function spanYearBounds(
 
   for (const s of dataset.spans) {
     if (!episodeIds.has(s.episode_id)) continue;
-    if (!s.start_iso || !s.end_iso) continue;
-
-    const a = new Date(s.start_iso).getUTCFullYear();
-    const b = new Date(s.end_iso).getUTCFullYear();
-    if (Number.isNaN(a) || Number.isNaN(b)) continue;
+    const years = spanYears(s);
+    if (!years) continue;
+    const [a, b] = years;
 
     minYear = Math.min(minYear, a, b);
     maxYear = Math.max(maxYear, a, b);

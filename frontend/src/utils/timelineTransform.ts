@@ -1,4 +1,5 @@
 import type { Dataset } from "../types"
+import { parseIsoDateUtc } from "./historicalDate"
 
 export interface D3StackData {
   podcastId: number
@@ -19,9 +20,7 @@ export interface D3StackData {
 }
 
 function isValidDate(dateString: string | undefined): dateString is string {
-  if (!dateString) return false
-  const date = new Date(dateString)
-  return date instanceof Date && !Number.isNaN(date.getTime())
+  return parseIsoDateUtc(dateString) !== null
 }
 
 export function transformToStackData(dataset: Dataset, episodeIds: number[]): D3StackData[] {
@@ -73,8 +72,9 @@ export function transformToStackData(dataset: Dataset, episodeIds: number[]): D3
       )
 
       const spans = validSpans.map(span => {
-        const a = new Date(span.start_iso)
-        const b = new Date(span.end_iso)
+        const a = parseIsoDateUtc(span.start_iso)
+        const b = parseIsoDateUtc(span.end_iso)
+        if (!a || !b) return null
         const start = a.getTime() <= b.getTime() ? a : b
         const end = a.getTime() <= b.getTime() ? b : a
         return {
@@ -85,7 +85,7 @@ export function transformToStackData(dataset: Dataset, episodeIds: number[]): D3
           sourceText: span.source_text,
           clusterId: dataset.episode_clusters[String(episodeId)],
         }
-      })
+      }).filter((sp): sp is NonNullable<typeof sp> => sp !== null)
 
       episodes.push({
         episodeId: episode.id,

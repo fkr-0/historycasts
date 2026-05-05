@@ -68,7 +68,9 @@ export function createTimeScale(
   explicitYearRange?: [number, number]
 ): ScaleTime<number, number> {
   const safeWidth = Math.max(width, margin.left + margin.right + 20)
-  const range: [number, number] = [margin.left, safeWidth - margin.right]
+  const innerWidth = Math.max(20, safeWidth - margin.left - margin.right)
+  const axisGutter = 8
+  const range: [number, number] = [axisGutter, Math.max(axisGutter + 1, innerWidth - axisGutter)]
 
   const dateRange = extractDateRange(data)
   if (explicitYearRange) {
@@ -102,7 +104,8 @@ export function createPodcastScale(
   margin: VerticalMargin
 ): ScaleBand<string> {
   const safeHeight = Math.max(height, margin.top + margin.bottom + 20)
-  const range: [number, number] = [margin.top, safeHeight - margin.bottom]
+  const innerHeight = Math.max(20, safeHeight - margin.top - margin.bottom)
+  const range: [number, number] = [0, innerHeight]
 
   // Extract podcast titles from data
   const domain = data.map(d => d.podcastTitle)

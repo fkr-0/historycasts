@@ -295,4 +295,29 @@ describe("transformToStackData", () => {
     expect(span.score).toBe(0.9)
     expect(span.sourceText).toBe("In the early 19th century...")
   })
+
+  it("should keep BCE spans encoded as extended ISO years", () => {
+    const dataset: Dataset = {
+      ...createMockDataset(),
+      spans: [
+        {
+          id: 50,
+          episode_id: 1,
+          start_iso: "-0401-01-01",
+          end_iso: "-0401-12-31",
+          precision: "year",
+          qualifier: "year",
+          score: 0.8,
+          source_section: "body",
+          source_text: "401 vor der Zeitenwende",
+        },
+      ],
+    }
+
+    const result = transformToStackData(dataset, [1])
+    expect(result).toHaveLength(1)
+    expect(result[0].episodes[0].spans).toHaveLength(1)
+    expect(result[0].episodes[0].spans[0].start.getUTCFullYear()).toBe(-401)
+    expect(result[0].episodes[0].spans[0].end.getUTCFullYear()).toBe(-401)
+  })
 })

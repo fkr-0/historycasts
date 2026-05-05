@@ -1,8 +1,13 @@
 import { useMemo, useState } from "react"
+import { buildClusterEpisodeUnlinkOp, buildClusterRelabelOp } from "../intent/opBuilders/clusterOps"
+import type { IntentOperation } from "../intent/types"
+import {
+  filterEpisodesBase,
+  filterEpisodesByYearRange,
+  spanYearBounds,
+} from "../state/episodeFiltering"
 import type { Dataset } from "../types"
 import type { Filters } from "../urlState"
-import type { IntentOperation } from "../intent/types"
-import { buildClusterEpisodeUnlinkOp, buildClusterRelabelOp } from "../intent/opBuilders/clusterOps"
 
 export default function ClusterPanel(props: {
   dataset: Dataset
@@ -13,11 +18,30 @@ export default function ClusterPanel(props: {
 }) {
   const [open, setOpen] = useState(true)
   const clusters = useMemo(() => {
-    const pid = props.filters.podcastId
+    const filterScope = { ...props.filters, clusterId: undefined }
+    const baseEpisodes = filterEpisodesBase(props.dataset, filterScope)
+    const bounds = spanYearBounds(props.dataset, new Set(baseEpisodes.map(e => e.id)))
+    const yearRange: [number, number] = [
+      props.filters.yearMin ?? bounds?.[0] ?? Number.NEGATIVE_INFINITY,
+      props.filters.yearMax ?? bounds?.[1] ?? Number.POSITIVE_INFINITY,
+    ]
+    const scopedEpisodes =
+      Number.isFinite(yearRange[0]) && Number.isFinite(yearRange[1])
+        ? filterEpisodesByYearRange(props.dataset, baseEpisodes, yearRange)
+        : baseEpisodes
+    const scopedEpisodeIds = new Set(scopedEpisodes.map(e => e.id))
+    const scopedClusterCounts = new Map<number, number>()
+
+    for (const [episodeId, clusterId] of Object.entries(props.dataset.episode_clusters)) {
+      if (!scopedEpisodeIds.has(Number(episodeId))) continue
+      scopedClusterCounts.set(clusterId, (scopedClusterCounts.get(clusterId) ?? 0) + 1)
+    }
+
     return props.dataset.clusters
-      .filter(c => (pid === "all" ? true : c.cluster.podcast_id === pid))
-      .sort((a, b) => b.cluster.n_members - a.cluster.n_members)
-  }, [props.dataset, props.filters.podcastId])
+      .map(c => ({ ...c, scopedCount: scopedClusterCounts.get(c.cluster.id) ?? 0 }))
+      .filter(c => c.scopedCount > 0 || c.cluster.id === props.filters.clusterId)
+      .sort((a, b) => b.scopedCount - a.scopedCount || b.cluster.n_members - a.cluster.n_members)
+  }, [props.dataset, props.filters])
 
   return (
     <div>
@@ -53,7 +77,9 @@ export default function ClusterPanel(props: {
               >
                 <div className="flex justify-between">
                   <b>#{c.cluster.id}</b>
-                  <span className="text-xs text-[color:var(--muted)]">{c.cluster.n_members} eps</span>
+                  <span className="text-xs text-[color:var(--muted)]">
+                    {c.scopedCount}/{c.cluster.n_members} eps
+                  </span>
                 </div>
                 <div className="text-xs text-[color:var(--muted)]">
                   centroid: {c.cluster.centroid_mid_year.toFixed(0)} ·{" "}
@@ -75,7 +101,10 @@ export default function ClusterPanel(props: {
                     type="button"
                     className="rounded border border-[color:var(--border)] px-1"
                     onClick={() => {
-                      const next = prompt("Set cluster label", c.cluster.label ?? `Cluster ${c.cluster.id}`)
+                      const next = prompt(
+                        "Set cluster label",
+                        c.cluster.label ?? `Cluster ${c.cluster.id}`
+                      )
                       if (!next) return
                       props.onQueueOperation(
                         buildClusterRelabelOp({
@@ -107,8 +136,15 @@ export default function ClusterPanel(props: {
               )}
             </div>
           ))}
+          {clusters.length === 0 && (
+            <div className="rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-2)] p-2 text-xs text-[color:var(--muted)]">
+              No clusters match the current filters.
+            </div>
+          )}
           {clusters.length > 24 && (
-            <div className="text-xs text-[color:var(--muted)]">showing top 24 clusters</div>
+            <div className="text-xs text-[color:var(--muted)]">
+              showing top 24 matching clusters
+            </div>
           )}
         </div>
       )}

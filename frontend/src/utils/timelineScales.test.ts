@@ -75,8 +75,8 @@ describe("timelineScales", () => {
       const scale = createTimeScale(data, width, margin)
 
       const [minRange, maxRange] = scale.range()
-      expect(minRange).toBe(margin.left)
-      expect(maxRange).toBe(width - margin.right)
+      expect(minRange).toBe(8)
+      expect(maxRange).toBe(width - margin.left - margin.right - 8)
     })
 
     it("should handle empty data by returning default scale", () => {
@@ -89,8 +89,8 @@ describe("timelineScales", () => {
       // Should return a valid scale even with empty data
       expect(scale).toBeDefined()
       const [minRange, maxRange] = scale.range()
-      expect(minRange).toBe(margin.left)
-      expect(maxRange).toBe(width - margin.right)
+      expect(minRange).toBe(8)
+      expect(maxRange).toBe(width - margin.left - margin.right - 8)
     })
 
     it("should handle data with no spans", () => {
@@ -116,8 +116,8 @@ describe("timelineScales", () => {
       // Should return a valid scale even with no spans
       expect(scale).toBeDefined()
       const [minRange, maxRange] = scale.range()
-      expect(minRange).toBe(margin.left)
-      expect(maxRange).toBe(width - margin.right)
+      expect(minRange).toBe(8)
+      expect(maxRange).toBe(width - margin.left - margin.right - 8)
     })
   })
 
@@ -143,8 +143,8 @@ describe("timelineScales", () => {
       const scale = createPodcastScale(data, height, margin)
 
       const [minRange, maxRange] = scale.range()
-      expect(minRange).toBe(margin.top)
-      expect(maxRange).toBe(height - margin.bottom)
+      expect(minRange).toBe(0)
+      expect(maxRange).toBe(height - margin.top - margin.bottom)
     })
 
     it("should handle single podcast", () => {
@@ -189,8 +189,8 @@ describe("timelineScales", () => {
 
       expect(scale.domain()).toEqual([])
       const [minRange, maxRange] = scale.range()
-      expect(minRange).toBe(margin.top)
-      expect(maxRange).toBe(height - margin.bottom)
+      expect(minRange).toBe(0)
+      expect(maxRange).toBe(height - margin.top - margin.bottom)
     })
   })
 
@@ -208,13 +208,13 @@ describe("timelineScales", () => {
 
       // Check xScale range
       const [xMin, xMax] = scales.xScale.range()
-      expect(xMin).toBe(margin.left)
-      expect(xMax).toBe(width - margin.right)
+      expect(xMin).toBe(8)
+      expect(xMax).toBe(width - margin.left - margin.right - 8)
 
       // Check yScale range
       const [yMin, yMax] = scales.yScale.range()
-      expect(yMin).toBe(margin.top)
-      expect(yMax).toBe(height - margin.bottom)
+      expect(yMin).toBe(0)
+      expect(yMax).toBe(height - margin.top - margin.bottom)
     })
 
     it("should have xScale domain that covers all span dates", () => {
