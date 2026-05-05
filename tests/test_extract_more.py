@@ -17,6 +17,18 @@ def test_extract_time_mentions_bc_year():
     assert primary.year == -44
 
 
+def test_extract_time_mentions_bc_with_three_digits_not_reparsed_as_ad():
+    txt = "Kontext 300 v. Chr. in Rom"
+    mentions = extract_time_mentions(txt)
+    years = [m.year for m in mentions if m.kind == "year"]
+    assert -300 in years
+    assert 300 not in years
+
+    primary = pick_primary_time(mentions)
+    assert primary.kind == "point"
+    assert primary.year == -300
+
+
 def test_extract_links_basic():
     txt = "Mehr: https://example.com/a?b=1 und auch http://example.org/x)"
     links = extract_links(txt)

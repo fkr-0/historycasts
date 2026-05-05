@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -67,3 +68,42 @@ def test_build_static_skip_web_build(monkeypatch: pytest.MonkeyPatch, tmp_path: 
     monkeypatch.setattr("podcast_atlas.static_build.subprocess.run", fail_run)
 
     build_static(db_path=db_path, dataset_out=dataset_out, web_dir=web_dir, skip_web_build=True)
+
+
+def test_build_static_writes_build_report_docs(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    db_path = tmp_path / "podcasts.db"
+    db_path.write_text("placeholder", encoding="utf-8")
+    dataset_out = tmp_path / "static" / "dataset.json"
+    web_dir = tmp_path / "web"
+    web_dir.mkdir(parents=True)
+
+    payload = {
+        "meta": {},
+        "podcasts": [{"id": 1}],
+        "episodes": [{"id": 1}, {"id": 2}],
+        "spans": [{"id": 1}],
+        "places": [],
+        "entities": [],
+        "clusters": [{"id": 1}],
+        "concepts": [],
+        "concept_claims": [],
+    }
+
+    def fake_export_dataset(path: Path) -> dict[str, object]:
+        return payload
+
+    def fake_write_json(
+        payload_obj: dict[str, object], out_path: Path, *, minify: bool = False
+    ) -> None:
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(json.dumps(payload_obj), encoding="utf-8")
+
+    monkeypatch.setattr("podcast_atlas.static_build.export_dataset", fake_export_dataset)
+    monkeypatch.setattr("podcast_atlas.static_build.write_json", fake_write_json)
+
+    build_static(db_path=db_path, dataset_out=dataset_out, web_dir=web_dir, skip_web_build=True)
+
+    assert (web_dir / "dist" / "docs" / "build-report.html").exists()
+    assert (web_dir / "dist" / "docs" / "build-report.json").exists()

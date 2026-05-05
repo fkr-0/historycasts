@@ -36,7 +36,9 @@ def _scale(points: list[Point]) -> list[tuple[int, tuple[float, float, float]]]:
 def k_for_n(n: int) -> int:
     if n <= 0:
         return 0
-    return max(4, min(16, int(round(math.sqrt(n)))))
+    if n < 4:
+        return 1
+    return min(16, max(2, int(round(math.sqrt(n)))))
 
 
 def kmeans(

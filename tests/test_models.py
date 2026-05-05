@@ -303,7 +303,7 @@ class TestPlaceRow:
     def test_place_row_kind_literal_validation(self) -> None:
         """place_kind must be a valid PlaceKind literal."""
         # Valid kinds
-        for kind in ["city", "region", "country", "unknown"]:
+        for kind in ["city", "region", "country", "river", "unknown"]:
             row = PlaceRow(
                 id=1,
                 episode_id=1,

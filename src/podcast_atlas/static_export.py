@@ -67,6 +67,8 @@ FINGERPRINT_FIELDS_CLUSTER = (
     "label",
 )
 
+VALID_PLACE_KINDS = {"city", "region", "country", "river", "unknown"}
+
 
 def _dataset_revision(db_path: Path | str) -> str:
     p = Path(db_path)
@@ -91,6 +93,11 @@ def _table_names(cur: sqlite3.Cursor) -> set[str]:
     return {row[0] for row in cur.fetchall()}
 
 
+def _view_names(cur: sqlite3.Cursor) -> set[str]:
+    cur.execute("SELECT name FROM sqlite_master WHERE type='view'")
+    return {row[0] for row in cur.fetchall()}
+
+
 def _table_columns(cur: sqlite3.Cursor, table: str) -> set[str]:
     rows = cur.execute(f"PRAGMA table_info({table})").fetchall()
     return {r[1] for r in rows}
@@ -100,6 +107,15 @@ def _col_or_null(cols: set[str], name: str, alias: str | None = None) -> str:
     if name in cols:
         return name
     return f"NULL AS {alias or name}"
+
+
+def _normalize_place_kind(raw_kind: Any) -> str:
+    kind = str(raw_kind or "").strip().lower()
+    if not kind:
+        return "unknown"
+    if kind in VALID_PLACE_KINDS:
+        return kind
+    return "unknown"
 
 
 def detect_enrichment(cur: sqlite3.Cursor) -> Tuple[bool, bool]:
@@ -115,6 +131,7 @@ def export_dataset(db_path: Path | str) -> Dict[str, Any]:
     cur = conn.cursor()
 
     tables = _table_names(cur)
+    views = _view_names(cur)
     wiki_enriched, wikidata_enriched = detect_enrichment(cur)
 
     meta = ExportMeta(
@@ -159,21 +176,44 @@ def export_dataset(db_path: Path | str) -> Dict[str, Any]:
     else:
         desc_expr = "NULL AS description_pure"
 
-    cur.execute(
-        "SELECT id, podcast_id, guid, "
-        f"{_col_or_null(episode_cols, 'page_url')}, "
-        "title, "
-        f"{pub_expr}, "
-        f"{duration_expr}, "
-        "audio_url, "
-        f"{_col_or_null(episode_cols, 'episode_type')}, "
-        f"{kind_expr}, "
-        f"{_col_or_null(episode_cols, 'narrator')}, "
-        f"{desc_expr}, "
-        f"{_col_or_null(episode_cols, 'best_span_id')}, "
-        f"{_col_or_null(episode_cols, 'best_place_id')} "
-        "FROM episodes ORDER BY podcast_id, pub_date"
-    )
+    if "v_ui_episodes" in views:
+        cur.execute(
+            """
+            SELECT
+              episode_id AS id,
+              podcast_id,
+              guid,
+              page_url,
+              title,
+              pub_date,
+              duration,
+              audio_url,
+              NULL AS episode_type,
+              kind,
+              narrator,
+              description_pure,
+              best_span_id,
+              best_place_id
+            FROM v_ui_episodes
+            ORDER BY podcast_id, pub_date
+            """
+        )
+    else:
+        cur.execute(
+            "SELECT id, podcast_id, guid, "
+            f"{_col_or_null(episode_cols, 'page_url')}, "
+            "title, "
+            f"{pub_expr}, "
+            f"{duration_expr}, "
+            "audio_url, "
+            f"{_col_or_null(episode_cols, 'episode_type')}, "
+            f"{kind_expr}, "
+            f"{_col_or_null(episode_cols, 'narrator')}, "
+            f"{desc_expr}, "
+            f"{_col_or_null(episode_cols, 'best_span_id')}, "
+            f"{_col_or_null(episode_cols, 'best_place_id')} "
+            "FROM episodes ORDER BY podcast_id, pub_date"
+        )
     for row in cur.fetchall():
         episode = EpisodeRow(
             id=row["id"],
@@ -228,7 +268,7 @@ def export_dataset(db_path: Path | str) -> Dict[str, Any]:
                 episode_id=row["episode_id"],
                 canonical_name=row["canonical_name"],
                 norm_key=row["norm_key"],
-                place_kind=row["place_kind"] or "unknown",
+                place_kind=_normalize_place_kind(row["place_kind"]),
                 lat=row["lat"],
                 lon=row["lon"],
                 radius_km=row["radius_km"],
@@ -238,7 +278,10 @@ def export_dataset(db_path: Path | str) -> Dict[str, Any]:
 
     entities: List[Dict[str, Any]] = []
     if "entities" in tables:
-        cur.execute("SELECT id, episode_id, name, kind, confidence, source_text FROM entities")
+        if "v_ui_entities" in views:
+            cur.execute("SELECT id, episode_id, name, kind, confidence, source_text FROM v_ui_entities")
+        else:
+            cur.execute("SELECT id, episode_id, name, kind, confidence, source_text FROM entities")
         for row in cur.fetchall():
             entity = EntityRow(
                 id=row["id"],
@@ -255,7 +298,10 @@ def export_dataset(db_path: Path | str) -> Dict[str, Any]:
     if "keywords" in tables:
         cur.execute("SELECT id, phrase FROM keywords")
         keywords_map = {row["id"]: row["phrase"] for row in cur.fetchall()}
-        cur.execute("SELECT episode_id, keyword_id, score FROM episode_keywords")
+        if "v_ui_episode_keywords" in views:
+            cur.execute("SELECT episode_id, keyword_id, score FROM v_ui_episode_keywords")
+        else:
+            cur.execute("SELECT episode_id, keyword_id, score FROM episode_keywords")
         for row in cur.fetchall():
             phrase = keywords_map.get(row["keyword_id"])
             if phrase:
@@ -265,22 +311,26 @@ def export_dataset(db_path: Path | str) -> Dict[str, Any]:
 
     episode_clusters: Dict[str, int] = {}
     if "episode_clusters" in tables:
-        cur.execute("SELECT episode_id, cluster_id FROM episode_clusters")
+        if "v_episode_cluster_best" in views:
+            cur.execute("SELECT episode_id, cluster_id FROM v_episode_cluster_best")
+        else:
+            cur.execute("SELECT episode_id, cluster_id FROM episode_clusters")
         for row in cur.fetchall():
             episode_clusters[str(row["episode_id"])] = row["cluster_id"]
 
     clusters: List[Dict[str, Any]] = []
     if "clusters" in tables:
+        cluster_source = "v_ui_clusters" if "v_ui_clusters" in views else "clusters"
         cur.execute("PRAGMA table_info(clusters)")
         cols = {c[1] for c in cur.fetchall()}
         if "centroid_mid_year" in cols:
             cur.execute(
-                "SELECT id, podcast_id, k, centroid_mid_year, centroid_lat, centroid_lon, n_members, label FROM clusters"
+                f"SELECT id, podcast_id, k, centroid_mid_year, centroid_lat, centroid_lon, n_members, label FROM {cluster_source}"
             )
         else:
             cur.execute(
-                "SELECT id, podcast_id, k, centroid_year AS centroid_mid_year, "
-                "centroid_lat, centroid_lon, NULL AS n_members, label FROM clusters"
+                f"SELECT id, podcast_id, k, centroid_year AS centroid_mid_year, "
+                f"centroid_lat, centroid_lon, NULL AS n_members, label FROM {cluster_source}"
             )
         raw_clusters = cur.fetchall()
 
@@ -377,8 +427,6 @@ def export_dataset(db_path: Path | str) -> Dict[str, Any]:
                 }
             )
 
-    conn.close()
-
     payload: Dict[str, Any] = {
         "meta": meta,
         "podcasts": podcasts,
@@ -391,6 +439,69 @@ def export_dataset(db_path: Path | str) -> Dict[str, Any]:
         "clusters": clusters,
     }
 
+    if "v_best_time_span" in views:
+        preferred_spans: List[Dict[str, Any]] = []
+        cur.execute(
+            "SELECT id, episode_id, start_iso, end_iso, precision, qualifier, score, source_section, source_text, source_context FROM v_best_time_span"
+        )
+        for row in cur.fetchall():
+            preferred_spans.append(
+                SpanRow(
+                    id=row["id"],
+                    episode_id=row["episode_id"],
+                    start_iso=row["start_iso"],
+                    end_iso=row["end_iso"],
+                    precision=row["precision"],
+                    qualifier=row["qualifier"],
+                    score=row["score"],
+                    source_section=row["source_section"],
+                    source_text=row["source_text"],
+                    source_context=row["source_context"],
+                ).model_dump()
+            )
+        payload["spans_preferred"] = preferred_spans
+
+    if "v_best_place" in views:
+        preferred_places: List[Dict[str, Any]] = []
+        cur.execute(
+            """
+            SELECT p.id, p.episode_id, COALESCE(n.canonical_name, p.name_raw) AS canonical_name,
+                   COALESCE(n.norm_key, LOWER(p.name_raw)) AS norm_key, COALESCE(n.place_kind, p.place_kind) AS place_kind,
+                   p.latitude AS lat, p.longitude AS lon, p.radius_km
+            FROM v_best_place p LEFT JOIN places_norm n ON n.id = p.place_norm_id
+            """
+        )
+        for row in cur.fetchall():
+            preferred_places.append(
+                PlaceRow(
+                    id=row["id"],
+                    episode_id=row["episode_id"],
+                    canonical_name=row["canonical_name"],
+                    norm_key=row["norm_key"],
+                    place_kind=_normalize_place_kind(row["place_kind"]),
+                    lat=row["lat"],
+                    lon=row["lon"],
+                    radius_km=row["radius_km"],
+                ).model_dump()
+            )
+        payload["places_preferred"] = preferred_places
+
+    if "v_ui_entities" in views:
+        preferred_entities: List[Dict[str, Any]] = []
+        cur.execute("SELECT id, episode_id, name, kind, confidence, source_text FROM v_ui_entities")
+        for row in cur.fetchall():
+            preferred_entities.append(
+                EntityRow(
+                    id=row["id"],
+                    episode_id=row["episode_id"],
+                    name=row["name"],
+                    kind=row["kind"] or "unknown",
+                    confidence=row["confidence"],
+                    source_text=row["source_text"],
+                ).model_dump()
+            )
+        payload["entities_preferred"] = preferred_entities
+
     payload.update(compute_cluster_metrics(payload))
 
     if wiki_enriched:
@@ -398,6 +509,7 @@ def export_dataset(db_path: Path | str) -> Dict[str, Any]:
         payload["episode_concepts"] = episode_concepts
     if wikidata_enriched:
         payload["concept_claims"] = concept_claims
+    conn.close()
     return payload
 
 

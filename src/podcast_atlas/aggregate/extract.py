@@ -13,6 +13,34 @@ AD_SEPARATORS = [
     "**********",
 ]
 
+_LINE_NOISE_MARKERS = [
+    "instagram",
+    "tiktok",
+    "facebook",
+    "linktr",
+    "campfire",
+    "werbepartner",
+    "werbung",
+    "apple podcasts",
+    "podcastplattform panoptikum",
+    "rezensiert oder bewertet",
+    "hosted on acast",
+    "acast.com/privacy",
+    "podcasthörer",
+    "freundinnen und freunden",
+    "kolleginnen und kollegen",
+    "nachbarinnen und nachbarn",
+]
+
+
+def _is_noise_line(line: str) -> bool:
+    s = line.strip().casefold()
+    if not s:
+        return True
+    if "http://" in s or "https://" in s or "www." in s:
+        return True
+    return any(m in s for m in _LINE_NOISE_MARKERS)
+
 
 def clean_description(raw: str) -> str:
     """Remove ad/footer boilerplate and convert HTML to text."""
@@ -21,25 +49,10 @@ def clean_description(raw: str) -> str:
     for sep in AD_SEPARATORS:
         if sep in txt:
             txt = txt.split(sep, 1)[0]
-    # remove obvious social media/footer lines
-    drop_markers = [
-        "instagram",
-        "tiktok",
-        "facebook",
-        "wenn euch",
-        "abonniert",
-        "noch mehr",
-        "deutschlandfunk app",
-        "campfire",
-        "werbepartner",
-        "werbung",
-    ]
     lines = []
     for line in txt.splitlines():
         s = line.strip()
-        if not s:
-            continue
-        if any(m in s.lower() for m in drop_markers):
+        if _is_noise_line(s):
             continue
         lines.append(s)
     return "\n".join(lines).strip()
@@ -106,6 +119,18 @@ def _mk_date(y: int, m: int = 1, d: int = 1) -> Optional[dt.date]:
         return None
 
 
+def _expand_year_range_end(start_year: int, end_raw: int, end_digits: int) -> int:
+    if end_digits >= len(str(start_year)):
+        return end_raw
+
+    factor = 10**end_digits
+    prefix = start_year // factor
+    candidate = prefix * factor + end_raw
+    if candidate < start_year:
+        candidate += factor
+    return candidate
+
+
 def extract_spans(segment: str, section: str) -> list[Span]:
     spans: list[Span] = []
     low = segment.lower()
@@ -162,7 +187,8 @@ def extract_spans(segment: str, section: str) -> list[Span]:
     # year ranges
     for ys, ye in _YEAR_RANGE.findall(segment):
         sy = int(ys)
-        ey = int(ye) if len(ye) == 4 else int(str(sy)[:2] + ye)
+        ey_raw = int(ye)
+        ey = _expand_year_range_end(sy, ey_raw, len(ye))
         s = _mk_date(sy, 1, 1)
         e = _mk_date(ey, 12, 31)
         if s and e:
@@ -347,7 +373,48 @@ _STOP_DE = {
     "diese",
     "dieser",
     "dieses",
+    "podcast",
+    "podcasts",
+    "apple",
+    "itunes",
+    "instagram",
+    "acast",
+    "privacy",
+    "hosted",
+    "www",
+    "http",
+    "https",
+    "com",
+    "org",
+    "net",
+    "rezensiert",
+    "bewertet",
+    "folge",
+    "folgen",
 }
+
+_NOISE_TOKEN_RE = re.compile(r"^(?:gag\d+|feedgag\d+)$")
+_NOISE_PHRASE_MARKERS = [
+    "apple podcasts",
+    "podcastplattform panoptikum",
+    "acast",
+    "privacy",
+    "hosted on",
+    "podcasthörer",
+    "freuen uns wenn",
+]
+
+
+def _is_noise_phrase(phrase: str) -> bool:
+    p = phrase.casefold()
+    if any(m in p for m in _NOISE_PHRASE_MARKERS):
+        return True
+    if "http" in p or "www" in p:
+        return True
+    toks = p.split()
+    if toks and all(_NOISE_TOKEN_RE.match(t) for t in toks):
+        return True
+    return False
 
 
 def rake_phrases(text: str, *, max_phrases: int = 25) -> list[tuple[str, float]]:
@@ -356,7 +423,7 @@ def rake_phrases(text: str, *, max_phrases: int = 25) -> list[tuple[str, float]]
     phrases: list[list[str]] = []
     cur: list[str] = []
     for t in tokens:
-        if not t or t in _STOP_DE or len(t) <= 2:
+        if not t or t in _STOP_DE or len(t) <= 2 or _NOISE_TOKEN_RE.match(t):
             if cur:
                 phrases.append(cur)
                 cur = []
@@ -380,6 +447,8 @@ def rake_phrases(text: str, *, max_phrases: int = 25) -> list[tuple[str, float]]
         if len(ph) > 5:
             continue
         phrase = " ".join(ph)
+        if _is_noise_phrase(phrase):
+            continue
         score = 0.0
         for w in ph:
             score += (deg.get(w, 0) + freq.get(w, 1)) / float(freq.get(w, 1))

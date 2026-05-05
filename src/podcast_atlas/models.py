@@ -11,7 +11,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 # Type aliases for literal values
-PlaceKind = Literal["city", "region", "country", "unknown"]
+PlaceKind = Literal["city", "region", "country", "river", "unknown"]
 EntityKind = Literal["person", "org", "event", "place", "unknown"]
 
 
