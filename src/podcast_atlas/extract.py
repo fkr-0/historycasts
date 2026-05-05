@@ -66,6 +66,7 @@ def extract_time_mentions(text: str) -> List[TimeMention]:
         )
         range_spans.append((m.start(), m.end()))
 
+    bc_spans: List[tuple[int, int]] = []
     # BC years (e.g., 44 v. Chr.)
     for m in _BC_RE.finditer(text):
         y = -int(m.group("y"))
@@ -73,10 +74,13 @@ def extract_time_mentions(text: str) -> List[TimeMention]:
         if any(a <= m.start() < b for a, b in range_spans):
             continue
         mentions.append(TimeMention(kind="year", year=y, start=m.start(), end=m.end()))
+        bc_spans.append((m.start(), m.end()))
 
     # Plain years not inside a range.
     for m in _YEAR_RE.finditer(text):
         if any(a <= m.start() < b for a, b in range_spans):
+            continue
+        if any(a <= m.start() < b for a, b in bc_spans):
             continue
         y = int(m.group("y"))
         mentions.append(TimeMention(kind="year", year=y, start=m.start(), end=m.end()))

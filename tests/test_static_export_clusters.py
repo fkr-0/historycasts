@@ -89,5 +89,40 @@ def test_export_dataset_includes_cluster_metric_sections(tmp_path: Path) -> None
     assert "cluster_correlations" in payload
     assert "cluster_timeline_histogram" in payload
     assert "cluster_next_steps" in payload
+    assert "spans_preferred" in payload
+    assert "places_preferred" in payload
+    assert "entities_preferred" in payload
     assert payload["episodes"][0]["row_fingerprint"]
     assert payload["clusters"][0]["cluster"]["row_fingerprint"]
+
+
+def test_export_dataset_handles_river_place_kind(tmp_path: Path) -> None:
+    db_path = tmp_path / "river.db"
+    conn = sqlite3.connect(db_path)
+    ensure_schema(conn)
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO podcasts (id, title, feed_url) VALUES (1, 'Test Podcast', 'https://example.test/feed')"
+    )
+    cur.execute(
+        """
+        INSERT INTO episodes
+        (id, podcast_id, guid, title, pub_date, audio_url, kind, narrator, description_pure)
+        VALUES (1, 1, 'g1', 'Episode One', '2020-01-01T00:00:00Z', 'https://a', 'regular', 'N1', 'desc')
+        """
+    )
+    cur.execute(
+        "INSERT INTO places_norm (id, norm_key, canonical_name, place_kind) VALUES (1, 'rhein', 'Rhein', 'river')"
+    )
+    cur.execute(
+        """
+        INSERT INTO places (id, episode_id, place_norm_id, name_raw, place_kind, latitude, longitude, radius_km)
+        VALUES (1, 1, 1, 'Rhein', 'river', 50.0, 7.0, 50.0)
+        """
+    )
+    conn.commit()
+    conn.close()
+
+    payload = export_dataset(db_path)
+    place_kinds = {p["place_kind"] for p in payload["places"]}
+    assert "river" in place_kinds

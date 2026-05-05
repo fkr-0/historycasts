@@ -15,10 +15,12 @@ from .extract import (
     segment_text,
 )
 from .gazetteer import load_gazetteer_csv, norm_key
+from ..provenance import ORIGIN_DET, ORIGIN_NONDET, new_run
 from .rss_parse import parse_rss
 from .schema import ensure_schema
 
 _URL_RE = re.compile(r"https?://\S+")
+DEFAULT_YEAR_MAX = dt.datetime.now(dt.timezone.utc).year
 
 
 def _rowid(cur: sqlite3.Cursor) -> int:
@@ -97,15 +99,44 @@ def _insert_episode(
     kind = _classify_kind(item.title)
     pure = clean_description(item.description_raw)
     narrator = _detect_narrator(item.author, pure)
+    cur_raw = conn.execute(
+        """
+        INSERT OR IGNORE INTO episodes_raw
+        (podcast_id, guid, title, pub_date, page_url, audio_url, duration_sec, author, description_raw)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            podcast_id,
+            item.guid,
+            item.title,
+            item.pub_date.isoformat(),
+            item.page_url,
+            item.audio_url,
+            item.duration_sec,
+            item.author,
+            item.description_raw,
+        ),
+    )
+    raw_id = (
+        _rowid(cur_raw)
+        if cur_raw.lastrowid is not None
+        else int(
+            conn.execute(
+                "SELECT id FROM episodes_raw WHERE podcast_id=? AND guid=?",
+                (podcast_id, item.guid),
+            ).fetchone()[0]
+        )
+    )
 
     cur = conn.execute(
         """
         INSERT INTO episodes
-        (podcast_id, guid, page_url, title, pub_date, duration, audio_url, episode_type, kind, narrator, description_raw, description_pure)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (podcast_id, raw_id, guid, page_url, title, pub_date, duration, audio_url, episode_type, kind, narrator, description_raw, description_pure)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             podcast_id,
+            raw_id,
             item.guid,
             item.page_url,
             item.title,
@@ -157,9 +188,29 @@ def _mid_year(start_iso: str, end_iso: str) -> Optional[float]:
         return None
 
 
-def build_db(db_path: str, rss_paths: list[str], gazetteer_csv: str, *, limit: int = 0) -> None:
+def build_db(
+    db_path: str,
+    rss_paths: list[str],
+    gazetteer_csv: str,
+    *,
+    limit: int = 0,
+    year_max: int = DEFAULT_YEAR_MAX,
+    enable_heuristic_review: bool = True,
+) -> None:
     conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
     ensure_schema(conn)
+    run_id = new_run(
+        conn,
+        origin=ORIGIN_DET,
+        tool="aggregate-build-db",
+        params={
+            "rss_paths": rss_paths,
+            "limit": int(limit),
+            "year_max": int(year_max),
+            "enable_heuristic_review": bool(enable_heuristic_review),
+        },
+    )
 
     gaz = load_gazetteer_csv(gazetteer_csv)
 
@@ -200,10 +251,12 @@ def build_db(db_path: str, rss_paths: list[str], gazetteer_csv: str, *, limit: i
                     cur2 = conn.execute(
                         """
                         INSERT INTO time_spans
-                        (episode_id, segment_id, start_iso, end_iso, precision, qualifier, source_text, source_section, source_context, score, review_flag)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        (run_id, origin, locked, episode_id, segment_id, start_iso, end_iso, precision, qualifier, source_text, source_section, source_context, score, review_flag)
+                        VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         (
+                            run_id,
+                            ORIGIN_DET,
                             eid,
                             seg_id,
                             sp.start.isoformat() if sp.start else None,
@@ -229,10 +282,10 @@ def build_db(db_path: str, rss_paths: list[str], gazetteer_csv: str, *, limit: i
                     cur3 = conn.execute(
                         """
                         INSERT INTO places
-                        (episode_id, segment_id, place_norm_id, name_raw, place_kind, latitude, longitude, radius_km)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        (run_id, origin, locked, episode_id, segment_id, place_norm_id, name_raw, place_kind, latitude, longitude, radius_km)
+                        VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
-                        (eid, seg_id, pnid, canon, kind, lat, lon, radius),
+                        (run_id, ORIGIN_DET, eid, seg_id, pnid, canon, kind, lat, lon, radius),
                     )
                     pl_id = _rowid(cur3)
                     # choose first geocoded place as best
@@ -242,8 +295,8 @@ def build_db(db_path: str, rss_paths: list[str], gazetteer_csv: str, *, limit: i
                 # entities
                 for name, kind, conf, src in extract_entities(txt):
                     conn.execute(
-                        "INSERT INTO entities (episode_id, segment_id, name, kind, confidence, source_text) VALUES (?, ?, ?, ?, ?, ?)",
-                        (eid, seg_id, name, kind, float(conf), src),
+                        "INSERT INTO entities (run_id, origin, locked, episode_id, segment_id, name, kind, confidence, source_text) VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?)",
+                        (run_id, ORIGIN_DET, eid, seg_id, name, kind, float(conf), src),
                     )
 
                 # keywords only from main section
@@ -261,8 +314,8 @@ def build_db(db_path: str, rss_paths: list[str], gazetteer_csv: str, *, limit: i
                             )
                             kid = _rowid(curk)
                         conn.execute(
-                            "INSERT OR REPLACE INTO episode_keywords (episode_id, keyword_id, score) VALUES (?, ?, ?)",
-                            (eid, kid, float(score)),
+                            "INSERT OR REPLACE INTO episode_keywords (run_id, origin, locked, episode_id, keyword_id, score) VALUES (?, ?, 0, ?, ?, ?)",
+                            (run_id, ORIGIN_DET, eid, kid, float(score)),
                         )
 
             # set best ids
@@ -274,18 +327,24 @@ def build_db(db_path: str, rss_paths: list[str], gazetteer_csv: str, *, limit: i
 
             count += 1
 
+    postprocess_derived_rows(
+        conn,
+        year_max=year_max,
+        enable_heuristic_review=enable_heuristic_review,
+    )
+
     # clusters per podcast
-    _recompute_clusters(conn)
+    _recompute_clusters(conn, run_id=run_id)
 
     conn.close()
 
 
-def _recompute_clusters(conn: sqlite3.Connection) -> None:
-    # clear old clusters
-    conn.execute("DELETE FROM episode_clusters")
-    conn.execute("DELETE FROM cluster_keywords")
-    conn.execute("DELETE FROM cluster_entities")
-    conn.execute("DELETE FROM clusters")
+def _recompute_clusters(conn: sqlite3.Connection, *, run_id: int) -> None:
+    # clear only deterministic cluster artifacts; preserve locked/nondet curation.
+    conn.execute("DELETE FROM episode_clusters WHERE origin='det'")
+    conn.execute("DELETE FROM cluster_keywords WHERE origin='det'")
+    conn.execute("DELETE FROM cluster_entities WHERE origin='det'")
+    conn.execute("DELETE FROM clusters WHERE origin='det'")
     conn.commit()
 
     podcasts = conn.execute("SELECT id FROM podcasts ORDER BY id").fetchall()
@@ -320,15 +379,15 @@ def _recompute_clusters(conn: sqlite3.Connection) -> None:
         cluster_ids: list[int] = []
         for j, (cy, clat, clon) in enumerate(centroids):
             cur = conn.execute(
-                "INSERT INTO clusters (podcast_id, k, label, centroid_year, centroid_lat, centroid_lon) VALUES (?, ?, ?, ?, ?, ?)",
-                (pid, k, f"C{j + 1}", float(cy), float(clat), float(clon)),
+                "INSERT INTO clusters (run_id, origin, podcast_id, k, label, centroid_year, centroid_lat, centroid_lon) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (run_id, ORIGIN_DET, pid, k, f"C{j + 1}", float(cy), float(clat), float(clon)),
             )
             cluster_ids.append(_rowid(cur))
 
         for eid, j in assign.items():
             conn.execute(
-                "INSERT INTO episode_clusters (episode_id, cluster_id) VALUES (?, ?)",
-                (eid, cluster_ids[int(j)]),
+                "INSERT INTO episode_clusters (run_id, origin, episode_id, cluster_id) VALUES (?, ?, ?, ?)",
+                (run_id, ORIGIN_DET, eid, cluster_ids[int(j)]),
             )
 
         conn.commit()
@@ -358,8 +417,8 @@ def _recompute_clusters(conn: sqlite3.Connection) -> None:
                 ep_ids,
             ).fetchall()
             conn.executemany(
-                "INSERT INTO cluster_keywords (cluster_id, phrase, score) VALUES (?, ?, ?)",
-                [(cid, phrase, float(s)) for phrase, s in kw],
+                "INSERT INTO cluster_keywords (run_id, origin, locked, cluster_id, phrase, score) VALUES (?, ?, 0, ?, ?, ?)",
+                [(run_id, ORIGIN_DET, cid, phrase, float(s)) for phrase, s in kw],
             )
 
             ent = conn.execute(
@@ -374,7 +433,141 @@ def _recompute_clusters(conn: sqlite3.Connection) -> None:
                 ep_ids,
             ).fetchall()
             conn.executemany(
-                "INSERT INTO cluster_entities (cluster_id, name, kind, score) VALUES (?, ?, ?, ?)",
-                [(cid, name, kind, float(c)) for name, kind, c in ent],
+                "INSERT INTO cluster_entities (run_id, origin, locked, cluster_id, name, kind, score) VALUES (?, ?, 0, ?, ?, ?, ?)",
+                [(run_id, ORIGIN_DET, cid, name, kind, float(c)) for name, kind, c in ent],
             )
             conn.commit()
+
+
+def cleanup_future_spans(conn: sqlite3.Connection, *, year_max: int) -> int:
+    row = conn.execute(
+        """
+        SELECT COUNT(*) AS c
+        FROM time_spans
+        WHERE (start_iso IS NOT NULL AND CAST(substr(start_iso,1,4) AS INT) > ?)
+           OR (end_iso IS NOT NULL AND CAST(substr(end_iso,1,4) AS INT) > ?)
+        """,
+        (int(year_max), int(year_max)),
+    ).fetchone()
+    delete_count = int(row["c"] if row is not None else 0)
+    if delete_count <= 0:
+        return 0
+    conn.execute(
+        """
+        DELETE FROM time_spans
+        WHERE (start_iso IS NOT NULL AND CAST(substr(start_iso,1,4) AS INT) > ?)
+           OR (end_iso IS NOT NULL AND CAST(substr(end_iso,1,4) AS INT) > ?)
+        """,
+        (int(year_max), int(year_max)),
+    )
+    conn.execute(
+        """
+        UPDATE episodes
+        SET best_span_id = NULL
+        WHERE best_span_id IS NOT NULL
+          AND NOT EXISTS (SELECT 1 FROM time_spans ts WHERE ts.id = episodes.best_span_id)
+        """
+    )
+    conn.commit()
+    return delete_count
+
+
+def apply_heuristic_review_overrides(conn: sqlite3.Connection, *, year_max: int) -> int:
+    review_run = new_run(
+        conn,
+        origin=ORIGIN_NONDET,
+        tool="aggregate-heuristic-review",
+        params={"year_max": int(year_max)},
+    )
+    rows = conn.execute(
+        """
+        SELECT e.id AS episode_id
+        FROM episodes e
+        JOIN v_best_time_span b ON b.episode_id = e.id
+        WHERE b.review_flag IS NOT NULL
+        """
+    ).fetchall()
+
+    inserted = 0
+    for row in rows:
+        episode_id = int(row["episode_id"])
+        cand = conn.execute(
+            """
+            SELECT ts.*
+            FROM time_spans ts
+            JOIN segments s ON s.id = ts.segment_id
+            WHERE ts.episode_id=? AND s.section='main'
+            ORDER BY ts.score DESC, ts.id DESC
+            LIMIT 1
+            """,
+            (episode_id,),
+        ).fetchone()
+        if cand is None:
+            continue
+
+        exists = conn.execute(
+            """
+            SELECT 1
+            FROM time_spans
+            WHERE episode_id=?
+              AND origin='nondet'
+              AND locked=1
+              AND review_flag='review-override'
+              AND COALESCE(start_iso, '')=COALESCE(?, '')
+              AND COALESCE(end_iso, '')=COALESCE(?, '')
+              AND precision=?
+              AND qualifier=?
+              AND source_text=?
+            LIMIT 1
+            """,
+            (
+                episode_id,
+                cand["start_iso"],
+                cand["end_iso"],
+                cand["precision"],
+                cand["qualifier"],
+                cand["source_text"],
+            ),
+        ).fetchone()
+        if exists is not None:
+            continue
+
+        cur = conn.execute(
+            """
+            INSERT INTO time_spans
+            (run_id, origin, locked, episode_id, segment_id, start_iso, end_iso, precision, qualifier, source_text, source_section, source_context, score, review_flag)
+            VALUES (?, 'nondet', 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'review-override')
+            """,
+            (
+                review_run,
+                cand["episode_id"],
+                cand["segment_id"],
+                cand["start_iso"],
+                cand["end_iso"],
+                cand["precision"],
+                cand["qualifier"],
+                cand["source_text"],
+                cand["source_section"],
+                cand["source_context"],
+                float(cand["score"]) + 0.01,
+            ),
+        )
+        conn.execute("UPDATE episodes SET best_span_id=? WHERE id=?", (int(cur.lastrowid), episode_id))
+        inserted += 1
+    conn.commit()
+    return inserted
+
+
+def postprocess_derived_rows(
+    conn: sqlite3.Connection,
+    *,
+    year_max: int = DEFAULT_YEAR_MAX,
+    enable_heuristic_review: bool = True,
+) -> dict[str, int]:
+    deleted_future = cleanup_future_spans(conn, year_max=year_max)
+    inserted_overrides = (
+        apply_heuristic_review_overrides(conn, year_max=year_max)
+        if enable_heuristic_review
+        else 0
+    )
+    return {"future_spans_deleted": deleted_future, "heuristic_overrides_inserted": inserted_overrides}

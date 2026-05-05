@@ -15,10 +15,27 @@ def main() -> None:
     )
     ap.add_argument("--gazetteer", required=True, help="Path to offline gazetteer CSV")
     ap.add_argument("--limit", type=int, default=0, help="Limit episodes per feed (0=all)")
+    ap.add_argument(
+        "--year-max",
+        type=int,
+        default=None,
+        help="Maximum allowed year for spans; later dates are pruned in postprocess",
+    )
+    ap.add_argument(
+        "--disable-heuristic-review",
+        action="store_true",
+        help="Disable insertion of locked nondet heuristic review overrides",
+    )
 
     args = ap.parse_args()
 
-    build_db(args.db, args.rss, args.gazetteer, limit=args.limit)
+    kwargs = {
+        "limit": args.limit,
+        "enable_heuristic_review": not bool(args.disable_heuristic_review),
+    }
+    if args.year_max is not None:
+        kwargs["year_max"] = int(args.year_max)
+    build_db(args.db, args.rss, args.gazetteer, **kwargs)
 
 
 if __name__ == "__main__":

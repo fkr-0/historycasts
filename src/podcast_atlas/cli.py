@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
 import uvicorn
@@ -10,7 +11,9 @@ from .api import create_app
 from .curation import delete_episode_spans
 from .db import Database
 from .feed_merge import merge_feeds
+from .geocode_places import geocode_places
 from .ingest import ingest_podcastde_archive, ingest_rss_file
+from .metadata_merge import merge_handcrafted_metadata
 from .static_build import build_static
 from .static_export import export_dataset, write_json
 
@@ -128,6 +131,55 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=[],
         help="Span id to preserve (repeatable)",
+    )
+
+    p_merge_meta = sub.add_parser(
+        "merge-handcrafted",
+        help="Merge handcrafted metadata from res/res.json into SQLite as protected rows",
+    )
+    p_merge_meta.add_argument("--db", required=True, help="Path to SQLite DB")
+    p_merge_meta.add_argument(
+        "--res-json",
+        default="res/res.json",
+        help="Path to handcrafted metadata JSON payload",
+    )
+    p_merge_meta.add_argument(
+        "--no-update-best",
+        action="store_true",
+        help="Do not update episodes.best_span_id/best_place_id",
+    )
+
+    p_geocode = sub.add_parser(
+        "geocode-places",
+        help="Resolve missing place lat/lon coordinates using online geocoding and update DB places",
+    )
+    p_geocode.add_argument("--db", required=True, help="Path to SQLite DB")
+    p_geocode.add_argument(
+        "--cache-path",
+        default="data/geocode_cache.json",
+        help="JSON cache for geocoder lookups",
+    )
+    p_geocode.add_argument(
+        "--limit",
+        type=int,
+        default=0,
+        help="Maximum number of unresolved canonical places to geocode (0=all)",
+    )
+    p_geocode.add_argument(
+        "--delay-seconds",
+        type=float,
+        default=1.0,
+        help="Delay between provider requests for rate-limit safety",
+    )
+    p_geocode.add_argument(
+        "--user-agent",
+        default="podcast-atlas/1.0 (historycasts geocoder)",
+        help="HTTP User-Agent for geocoder requests",
+    )
+    p_geocode.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Resolve and report without writing DB updates",
     )
 
     return p
@@ -260,6 +312,74 @@ def cmd_delete_spans(ns: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_merge_handcrafted(ns: argparse.Namespace) -> int:
+    stats = merge_handcrafted_metadata(
+        db_path=Path(ns.db),
+        res_json_path=Path(ns.res_json),
+        update_episode_best_refs=not bool(ns.no_update_best),
+    )
+    print(
+        "merge-handcrafted complete: "
+        f"episodes_seen={stats['episodes_seen']} "
+        f"episodes_missing={stats['episodes_missing']} "
+        f"timespans_inserted={stats['timespans_inserted']} "
+        f"places_inserted={stats['places_inserted']} "
+        f"entities_inserted={stats['entities_inserted']}"
+    )
+    return 0
+
+
+def cmd_geocode_places(ns: argparse.Namespace) -> int:
+    def _progress(event: dict[str, object]) -> None:
+        kind = str(event.get("event") or "")
+        if kind == "start":
+            print(
+                "geocode-places: start "
+                f"candidates={event.get('total_candidates', 0)} "
+                f"dry_run={event.get('dry_run', False)}"
+            )
+            return
+        if kind == "progress":
+            print(
+                "geocode-places: progress "
+                f"{event.get('index', 0)}/{event.get('total', 0)} "
+                f"status={event.get('status', 'unknown')} "
+                f"name={event.get('name', '')} "
+                f"cache={event.get('from_cache', False)} "
+                f"resolved={event.get('resolved', 0)} "
+                f"unresolved={event.get('unresolved', 0)}"
+            )
+            return
+        if kind == "done":
+            print(
+                "geocode-places: done "
+                f"candidates={event.get('candidates', 0)} "
+                f"resolved={event.get('resolved', 0)} "
+                f"unresolved={event.get('unresolved', 0)}"
+            )
+
+    stats = geocode_places(
+        db_path=Path(ns.db),
+        cache_path=Path(ns.cache_path),
+        limit=int(ns.limit),
+        delay_seconds=float(ns.delay_seconds),
+        dry_run=bool(ns.dry_run),
+        user_agent=str(ns.user_agent),
+        progress=_progress,
+    )
+    print(f"geocode-places stats: {json.dumps(stats, ensure_ascii=False, sort_keys=True)}")
+    print(
+        "geocode-places complete: "
+        f"candidates={stats.get('candidates', 0)} "
+        f"resolved={stats.get('resolved', 0)} "
+        f"unresolved={stats.get('unresolved', 0)} "
+        f"updated_rows={stats.get('updated_rows', 0)} "
+        f"best_place_updated={stats.get('best_place_updated', 0)} "
+        f"cache_hits={stats.get('cache_hits', 0)}"
+    )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = build_parser()
     ns = p.parse_args(argv)
@@ -282,6 +402,10 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_enrich_wiki(ns)
     if ns.cmd == "delete-spans":
         return cmd_delete_spans(ns)
+    if ns.cmd == "merge-handcrafted":
+        return cmd_merge_handcrafted(ns)
+    if ns.cmd == "geocode-places":
+        return cmd_geocode_places(ns)
 
     raise SystemExit(2)
 
