@@ -81,24 +81,13 @@ jobs:
 
       - name: Build static dataset + webapp
         env:
-          VITE_BASE_PATH: /${{ github.event.repository.name }}/app/
+          VITE_BASE_PATH: /${{ github.event.repository.name }}/
         run: uv run podcast-atlas build-static --db active.db --dataset-out static_site/dataset.json --web-dir frontend
-
-      - name: Build GitHub Pages bundle
-        run: |
-          uv run python scripts/build_pages_bundle.py \
-            --db active.db \
-            --dataset static_site/dataset.json \
-            --web-dist frontend/dist \
-            --static-site static_site \
-            --out pages \
-            --repo "${{ github.repository }}" \
-            --sha "${{ github.sha }}"
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: pages
+          path: frontend/dist
 
       - name: Deploy to GitHub Pages
         id: deployment

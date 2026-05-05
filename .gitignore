@@ -5,6 +5,17 @@ Thumbs.db
 *.swo
 .idea/
 .vscode/
+*.in
+*.out
+
+# Local LLM extraction scratch prompts/bundles
+promp
+prompt_*
+prmp.py
+sprmp.py
+fml.bash
+*.tangle.org
+*.tgz
 
 # Python
 __pycache__/
