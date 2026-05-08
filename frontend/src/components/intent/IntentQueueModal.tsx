@@ -1,5 +1,5 @@
-import IntentQueueTable from "./IntentQueueTable"
 import type { IntentOperation } from "../../intent/types"
+import IntentQueueTable from "./IntentQueueTable"
 
 type Props = {
   operations: IntentOperation[]
@@ -85,7 +85,11 @@ export default function IntentQueueModal(props: Props) {
         </div>
 
         <div className="mt-3">
-          <IntentQueueTable operations={props.operations} onCancel={props.onCancel} onRemove={props.onRemove} />
+          <IntentQueueTable
+            operations={props.operations}
+            onCancel={props.onCancel}
+            onRemove={props.onRemove}
+          />
         </div>
       </div>
     </div>

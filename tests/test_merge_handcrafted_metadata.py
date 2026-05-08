@@ -12,9 +12,7 @@ def test_merge_handcrafted_metadata_inserts_protected_rows(tmp_path: Path) -> No
     db_path = tmp_path / "meta.db"
     conn = sqlite3.connect(db_path)
     ensure_schema(conn)
-    conn.execute(
-        "INSERT INTO podcasts (id, title, feed_url) VALUES (1, 'pod', 'fixture:pod')"
-    )
+    conn.execute("INSERT INTO podcasts (id, title, feed_url) VALUES (1, 'pod', 'fixture:pod')")
     conn.execute(
         """
         INSERT INTO episodes
@@ -38,7 +36,9 @@ def test_merge_handcrafted_metadata_inserts_protected_rows(tmp_path: Path) -> No
                     "confidence": 0.95,
                 }
             ],
-            "places": [{"name_raw": "Paris", "normalized": "Paris", "kind": "city", "confidence": 0.9}],
+            "places": [
+                {"name_raw": "Paris", "normalized": "Paris", "kind": "city", "confidence": 0.9}
+            ],
             "people": [{"name": "Ada Lovelace", "role": "historical", "confidence": 0.9}],
             "hosts": [{"name": "Host A", "confidence": 0.8}],
             "guests": [],

@@ -1,7 +1,10 @@
 import type { Dataset } from "../types"
 import type { IntentOperation } from "./types"
 
-function getEntityRecord(dataset: Dataset, op: IntentOperation): Record<string, unknown> | undefined {
+function getEntityRecord(
+  dataset: Dataset,
+  op: IntentOperation
+): Record<string, unknown> | undefined {
   const id = op.entity_id
   if (id == null) return undefined
 
@@ -26,7 +29,10 @@ function getEntityRecord(dataset: Dataset, op: IntentOperation): Record<string, 
   }
 }
 
-function isUpdateApplied(record: Record<string, unknown> | undefined, op: IntentOperation): boolean {
+function isUpdateApplied(
+  record: Record<string, unknown> | undefined,
+  op: IntentOperation
+): boolean {
   if (!record) return false
   const fields = (op.payload.fields ?? op.payload) as Record<string, unknown>
   return Object.entries(fields).every(([k, v]) => record[k] === v)
@@ -37,7 +43,8 @@ export function reconcileOperation(dataset: Dataset, op: IntentOperation): Inten
   const record = getEntityRecord(dataset, op)
 
   if (op.op_type === "update") {
-    if (isUpdateApplied(record, op)) return { ...op, status: "applied", status_reason: "values already match" }
+    if (isUpdateApplied(record, op))
+      return { ...op, status: "applied", status_reason: "values already match" }
     if (!record) return { ...op, status: "invalid", status_reason: "target row missing" }
     return { ...op, status: "queued", status_reason: "not yet applied" }
   }

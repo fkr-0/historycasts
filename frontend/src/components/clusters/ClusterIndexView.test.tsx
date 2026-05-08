@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
-import ClusterIndexView from "./ClusterIndexView"
 import type { Dataset } from "../../types"
+import ClusterIndexView from "./ClusterIndexView"
 
 function ds(): Dataset {
   return {
@@ -78,7 +78,7 @@ describe("ClusterIndexView", () => {
         sortBy="size"
         onSortChange={onSort}
         onSelectCluster={onSelect}
-      />,
+      />
     )
 
     fireEvent.change(screen.getByLabelText(/sort clusters/i), { target: { value: "cohesion" } })

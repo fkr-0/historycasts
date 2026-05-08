@@ -50,7 +50,9 @@ export function useIntentQueue(dataset: Dataset | null) {
   const cancel = useCallback(
     (opId: string) => {
       const next = operations.map(op =>
-        op.op_id === opId ? { ...op, status: "cancelled" as const, status_reason: "cancelled by user" } : op
+        op.op_id === opId
+          ? { ...op, status: "cancelled" as const, status_reason: "cancelled by user" }
+          : op
       )
       persist(next)
     },

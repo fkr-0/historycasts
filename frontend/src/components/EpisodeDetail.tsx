@@ -1,9 +1,9 @@
 import { useMemo } from "react"
-import type { Dataset } from "../types"
-import type { IntentOperation } from "../intent/types"
+import { buildEntityKindUpdateOp } from "../intent/opBuilders/entityOps"
 import { buildEpisodeFieldUpdateOp } from "../intent/opBuilders/episodeOps"
 import { buildSpanStartYearUpdateOp } from "../intent/opBuilders/spanOps"
-import { buildEntityKindUpdateOp } from "../intent/opBuilders/entityOps"
+import type { IntentOperation } from "../intent/types"
+import type { Dataset } from "../types"
 
 export default function EpisodeDetail(props: {
   dataset: Dataset

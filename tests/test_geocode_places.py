@@ -71,16 +71,12 @@ def test_enrich_missing_place_coordinates_updates_rows_and_best_place(tmp_path: 
     assert calls == ["Paris|city", "Berlin|city"]
 
     conn = sqlite3.connect(db_path)
-    rows = conn.execute(
-        "SELECT id, latitude, longitude FROM places ORDER BY id"
-    ).fetchall()
+    rows = conn.execute("SELECT id, latitude, longitude FROM places ORDER BY id").fetchall()
     assert rows == [
         (1, 48.8566, 2.3522),
         (2, 48.8566, 2.3522),
         (3, 52.52, 13.405),
     ]
-    best_rows = conn.execute(
-        "SELECT id, best_place_id FROM episodes ORDER BY id"
-    ).fetchall()
+    best_rows = conn.execute("SELECT id, best_place_id FROM episodes ORDER BY id").fetchall()
     assert best_rows == [(1, 1), (2, 3)]
     conn.close()

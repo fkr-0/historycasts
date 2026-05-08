@@ -1,24 +1,24 @@
-import SearchBar from "../SearchBar";
-import type { ReactNode } from "react";
+import type { ReactNode } from "react"
+import SearchBar from "../SearchBar"
 
 export type HeaderBarProps = {
-  searchValue: string;
-  onSearchChange: (v: string) => void;
-  onSearchEnter: () => void;
-  onSearchClear: () => void;
+  searchValue: string
+  onSearchChange: (v: string) => void
+  onSearchEnter: () => void
+  onSearchClear: () => void
 
-  leftCollapsed: boolean;
-  rightCollapsed: boolean;
-  onToggleLeft: () => void;
-  onToggleRight: () => void;
+  leftCollapsed: boolean
+  rightCollapsed: boolean
+  onToggleLeft: () => void
+  onToggleRight: () => void
 
-  onOpenReadme: () => void;
-  onOpenChangelog: () => void;
-  intentControls?: ReactNode;
-};
+  onOpenReadme: () => void
+  onOpenChangelog: () => void
+  intentControls?: ReactNode
+}
 
 export default function HeaderBar(props: HeaderBarProps) {
-  const buildReportHref = new URL("docs/build-report.html", document.baseURI).pathname;
+  const buildReportHref = new URL("docs/build-report.html", document.baseURI).pathname
 
   return (
     <div className="sticky top-0 z-30 -mx-3 -mt-3 mb-3 border-b border-[color:var(--border)] bg-[color:var(--surface)]/90 p-3 backdrop-blur">
@@ -89,5 +89,5 @@ export default function HeaderBar(props: HeaderBarProps) {
         </div>
       </div>
     </div>
-  );
+  )
 }

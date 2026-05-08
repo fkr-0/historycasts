@@ -1,11 +1,11 @@
-import type { Dataset } from "../../types";
-import type { IntentOperation } from "../../intent/types";
-import { default as EpisodeDetail } from "../EpisodeDetail";
+import type { IntentOperation } from "../../intent/types"
+import type { Dataset } from "../../types"
+import { default as EpisodeDetail } from "../EpisodeDetail"
 
 export default function EpisodeTab(props: {
-  dataset: Dataset;
-  episodeId: number;
-  onQueueOperation?: (op: IntentOperation) => void;
+  dataset: Dataset
+  episodeId: number
+  onQueueOperation?: (op: IntentOperation) => void
 }) {
   return (
     <div className="h-full overflow-auto rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)]/60 p-3">
@@ -15,5 +15,5 @@ export default function EpisodeTab(props: {
         onQueueOperation={props.onQueueOperation}
       />
     </div>
-  );
+  )
 }

@@ -1,13 +1,13 @@
-import { useMemo } from "react"
-import type { Dataset } from "../types"
 import {
   createColumnHelper,
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
+  type SortingState,
   useReactTable,
-  type SortingState
 } from "@tanstack/react-table"
+import { useMemo } from "react"
+import type { Dataset } from "../types"
 
 type Episode = Dataset["episodes"][number]
 
@@ -19,7 +19,10 @@ export default function EpisodesTable(props: {
   selectedEpisodeId: number | null
   onSelectEpisode: (id: number) => void
 }) {
-  const [sorting, setSorting] = (useMemo(() => [[], () => {}] as unknown as [SortingState, (s: SortingState) => void], []) )
+  const [sorting, setSorting] = useMemo(
+    () => [[], () => {}] as unknown as [SortingState, (s: SortingState) => void],
+    []
+  )
   // NOTE: keep this super light; if you want persistent sorting, lift state to parent.
   // (We can wire it later; leaving minimal to avoid UI bloat.)
 
@@ -34,7 +37,7 @@ export default function EpisodesTable(props: {
               {info.row.original.narrator ?? "?"} · {info.row.original.kind ?? "?"}
             </div>
           </div>
-        )
+        ),
       }),
       col.accessor("pub_date_iso", {
         header: "Published",
@@ -42,8 +45,8 @@ export default function EpisodesTable(props: {
           <span className="text-xs text-[color:var(--muted)]">
             {new Date(info.getValue()).toLocaleDateString()}
           </span>
-        )
-      })
+        ),
+      }),
     ],
     []
   )
@@ -54,7 +57,7 @@ export default function EpisodesTable(props: {
     state: { sorting },
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel()
+    getSortedRowModel: getSortedRowModel(),
   })
 
   return (

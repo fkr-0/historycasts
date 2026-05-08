@@ -71,7 +71,9 @@ def merge_handcrafted_metadata(
                 continue
 
             counters["episodes_seen"] += 1
-            row = conn.execute("SELECT id, best_span_id, best_place_id FROM episodes WHERE id=?", (episode_id,)).fetchone()
+            row = conn.execute(
+                "SELECT id, best_span_id, best_place_id FROM episodes WHERE id=?", (episode_id,)
+            ).fetchone()
             if row is None:
                 counters["episodes_missing"] += 1
                 continue
@@ -90,7 +92,9 @@ def merge_handcrafted_metadata(
                     continue
                 precision, qualifier = _timespan_fields(ts)
                 score = float(ts.get("confidence") or 1.0)
-                source_text = str(ts.get("display") or ts.get("evidence") or start_iso or end_iso or "")
+                source_text = str(
+                    ts.get("display") or ts.get("evidence") or start_iso or end_iso or ""
+                )
                 source_context = str(ts.get("evidence") or clean_description or source_text)
 
                 exists = _row_exists(
@@ -119,7 +123,17 @@ def merge_handcrafted_metadata(
                      source_text, source_section, source_context, score, review_flag)
                     VALUES (?, 'nondet', 1, ?, NULL, ?, ?, ?, ?, ?, 'description', ?, ?, 'handcrafted-res-json')
                     """,
-                    (run_id, episode_id, start_iso, end_iso, precision, qualifier, source_text, source_context[:500], score),
+                    (
+                        run_id,
+                        episode_id,
+                        start_iso,
+                        end_iso,
+                        precision,
+                        qualifier,
+                        source_text,
+                        source_context[:500],
+                        score,
+                    ),
                 )
                 counters["timespans_inserted"] += 1
                 if update_episode_best_refs and best_span_id is None:

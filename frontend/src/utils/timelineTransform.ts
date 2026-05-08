@@ -71,21 +71,23 @@ export function transformToStackData(dataset: Dataset, episodeIds: number[]): D3
           span.episode_id === episodeId && isValidDate(span.start_iso) && isValidDate(span.end_iso)
       )
 
-      const spans = validSpans.map(span => {
-        const a = parseIsoDateUtc(span.start_iso)
-        const b = parseIsoDateUtc(span.end_iso)
-        if (!a || !b) return null
-        const start = a.getTime() <= b.getTime() ? a : b
-        const end = a.getTime() <= b.getTime() ? b : a
-        return {
-          spanId: span.id,
-          start,
-          end,
-          score: span.score,
-          sourceText: span.source_text,
-          clusterId: dataset.episode_clusters[String(episodeId)],
-        }
-      }).filter((sp): sp is NonNullable<typeof sp> => sp !== null)
+      const spans = validSpans
+        .map(span => {
+          const a = parseIsoDateUtc(span.start_iso)
+          const b = parseIsoDateUtc(span.end_iso)
+          if (!a || !b) return null
+          const start = a.getTime() <= b.getTime() ? a : b
+          const end = a.getTime() <= b.getTime() ? b : a
+          return {
+            spanId: span.id,
+            start,
+            end,
+            score: span.score,
+            sourceText: span.source_text,
+            clusterId: dataset.episode_clusters[String(episodeId)],
+          }
+        })
+        .filter((sp): sp is NonNullable<typeof sp> => sp !== null)
 
       episodes.push({
         episodeId: episode.id,

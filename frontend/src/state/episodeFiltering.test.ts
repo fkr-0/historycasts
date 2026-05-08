@@ -1,12 +1,12 @@
-import { describe, expect, test } from "vitest";
-import type { Dataset } from "../types";
+import { describe, expect, test } from "vitest"
+import type { Dataset } from "../types"
 import {
   clampYearRange,
   filterEpisodesBase,
   filterEpisodesByYearRange,
   hasSpanInYearRange,
   spanYearBounds,
-} from "./episodeFiltering";
+} from "./episodeFiltering"
 
 function makeDataset(): Dataset {
   return {
@@ -22,29 +22,29 @@ function makeDataset(): Dataset {
     ],
     // @ts-expect-error: minimal fixture shape; real app has full mapping
     episode_clusters: { "10": 1, "11": 2 },
-  };
+  }
 }
 
 describe("episodeFiltering", () => {
   test("hasSpanInYearRange detects overlap", () => {
-    const ds = makeDataset();
-    expect(hasSpanInYearRange(ds, 10, [50, 150])).toBe(true);
-    expect(hasSpanInYearRange(ds, 10, [201, 300])).toBe(false);
-  });
+    const ds = makeDataset()
+    expect(hasSpanInYearRange(ds, 10, [50, 150])).toBe(true)
+    expect(hasSpanInYearRange(ds, 10, [201, 300])).toBe(false)
+  })
 
   test("spanYearBounds returns min/max across selected episodes", () => {
-    const ds = makeDataset();
-    const bounds = spanYearBounds(ds, new Set([10, 11]));
-    expect(bounds).toEqual([100, 1600]);
-  });
+    const ds = makeDataset()
+    const bounds = spanYearBounds(ds, new Set([10, 11]))
+    expect(bounds).toEqual([100, 1600])
+  })
 
   test("clampYearRange enforces bounds and min<max", () => {
-    expect(clampYearRange([0, 10], -5, 99)).toEqual([0, 10]);
-    expect(clampYearRange([0, 10], 9, 9)).toEqual([9, 10]);
-  });
+    expect(clampYearRange([0, 10], -5, 99)).toEqual([0, 10])
+    expect(clampYearRange([0, 10], 9, 9)).toEqual([9, 10])
+  })
 
   test("filterEpisodesBase applies title/kind/narrator/podcast filters", () => {
-    const ds = makeDataset();
+    const ds = makeDataset()
 
     const filters = {
       podcastId: "all" as const,
@@ -57,42 +57,42 @@ describe("episodeFiltering", () => {
       yearMin: undefined as number | undefined,
       yearMax: undefined as number | undefined,
       clusterId: undefined as number | undefined,
-    };
+    }
 
-    const res = filterEpisodesBase(ds, filters);
-    expect(res.map((e) => e.id)).toEqual([10]);
-  });
+    const res = filterEpisodesBase(ds, filters)
+    expect(res.map(e => e.id)).toEqual([10])
+  })
 
   test("filterEpisodesByYearRange keeps only episodes overlapping active range", () => {
-    const ds = makeDataset();
-    const base = ds.episodes;
-    const res = filterEpisodesByYearRange(ds, base, [1400, 1700]);
-    expect(res.map((e) => e.id)).toEqual([11]);
-  });
+    const ds = makeDataset()
+    const base = ds.episodes
+    const res = filterEpisodesByYearRange(ds, base, [1400, 1700])
+    expect(res.map(e => e.id)).toEqual([11])
+  })
 
   test("future outlier spans are ignored in bounds and overlap checks", () => {
-    const ds = makeDataset();
+    const ds = makeDataset()
     ds.spans.push({
       episode_id: 10,
       start_iso: "231-01-01T00:00:00Z",
       end_iso: "2336-12-31T00:00:00Z",
-    });
+    })
 
-    const bounds = spanYearBounds(ds, new Set([10, 11]));
-    expect(bounds).toEqual([100, 1600]);
-    expect(hasSpanInYearRange(ds, 10, [2200, 2400])).toBe(false);
-  });
+    const bounds = spanYearBounds(ds, new Set([10, 11]))
+    expect(bounds).toEqual([100, 1600])
+    expect(hasSpanInYearRange(ds, 10, [2200, 2400])).toBe(false)
+  })
 
   test("extended ISO BCE years are included in bounds and overlap checks", () => {
-    const ds = makeDataset();
+    const ds = makeDataset()
     ds.spans.push({
       episode_id: 10,
       start_iso: "-0401-01-01",
       end_iso: "-0380-12-31",
-    });
+    })
 
-    const bounds = spanYearBounds(ds, new Set([10, 11]));
-    expect(bounds).toEqual([-401, 1600]);
-    expect(hasSpanInYearRange(ds, 10, [-420, -390])).toBe(true);
-  });
-});
+    const bounds = spanYearBounds(ds, new Set([10, 11]))
+    expect(bounds).toEqual([-401, 1600])
+    expect(hasSpanInYearRange(ds, 10, [-420, -390])).toBe(true)
+  })
+})

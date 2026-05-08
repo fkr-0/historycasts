@@ -37,7 +37,7 @@ function parseIntervalYears(startIso?: string, endIso?: string): [number, number
 
 export function buildEpisodeRasterRows(
   dataset: Dataset,
-  episodes: Dataset["episodes"],
+  episodes: Dataset["episodes"]
 ): EpisodeRasterRow[] {
   const byEpisode = new Map<number, EpisodeInterval[]>()
 
@@ -60,7 +60,9 @@ export function buildEpisodeRasterRows(
   for (const ep of episodes) {
     const intervals = byEpisode.get(ep.id) ?? []
     if (intervals.length === 0) continue
-    intervals.sort((a, b) => a.startYear - b.startYear || a.endYear - b.endYear || b.score - a.score)
+    intervals.sort(
+      (a, b) => a.startYear - b.startYear || a.endYear - b.endYear || b.score - a.score
+    )
     rows.push({
       episodeId: ep.id,
       title: ep.title,
@@ -77,13 +79,13 @@ export function buildEpisodeRasterRows(
 export function buildDensitySeries(
   rows: EpisodeRasterRow[],
   minYear: number,
-  maxYear: number,
+  maxYear: number
 ): DensityPoint[] {
   const points: DensityPoint[] = []
   for (let year = minYear; year <= maxYear; year += 1) {
     let count = 0
     for (const row of rows) {
-      if (row.intervals.some((it) => it.startYear <= year && it.endYear >= year)) {
+      if (row.intervals.some(it => it.startYear <= year && it.endYear >= year)) {
         count += 1
       }
     }

@@ -29,8 +29,12 @@ def test_postprocess_prunes_future_spans_and_inserts_heuristic_locked_override()
         VALUES (1, 1, 1, 'g1', 'E1', '2020-01-01', 'https://e', 'https://a', 10, 'regular', 'n', 'raw', 'pure')
         """
     )
-    conn.execute("INSERT INTO segments (id, episode_id, section, idx, text) VALUES (1, 1, 'caption', 0, 'cap')")
-    conn.execute("INSERT INTO segments (id, episode_id, section, idx, text) VALUES (2, 1, 'main', 1, 'main')")
+    conn.execute(
+        "INSERT INTO segments (id, episode_id, section, idx, text) VALUES (1, 1, 'caption', 0, 'cap')"
+    )
+    conn.execute(
+        "INSERT INTO segments (id, episode_id, section, idx, text) VALUES (2, 1, 'main', 1, 'main')"
+    )
 
     # Caption span is currently best and flagged for review.
     caption_id = conn.execute(
@@ -94,14 +98,16 @@ def test_postprocess_heuristic_override_is_idempotent() -> None:
     det_run = new_run(conn, origin=ORIGIN_DET, tool="test", params={})
 
     conn.execute("INSERT INTO podcasts (id, title, feed_url) VALUES (1, 'pod', 'feed')")
-    conn.execute(
-        "INSERT INTO episodes_raw (id, podcast_id, guid, title) VALUES (1, 1, 'g1', 'E1')"
-    )
+    conn.execute("INSERT INTO episodes_raw (id, podcast_id, guid, title) VALUES (1, 1, 'g1', 'E1')")
     conn.execute(
         "INSERT INTO episodes (id, podcast_id, raw_id, guid, title, pub_date) VALUES (1, 1, 1, 'g1', 'E1', '2020-01-01')"
     )
-    conn.execute("INSERT INTO segments (id, episode_id, section, idx, text) VALUES (1, 1, 'caption', 0, 'cap')")
-    conn.execute("INSERT INTO segments (id, episode_id, section, idx, text) VALUES (2, 1, 'main', 1, 'main')")
+    conn.execute(
+        "INSERT INTO segments (id, episode_id, section, idx, text) VALUES (1, 1, 'caption', 0, 'cap')"
+    )
+    conn.execute(
+        "INSERT INTO segments (id, episode_id, section, idx, text) VALUES (2, 1, 'main', 1, 'main')"
+    )
     caption_id = conn.execute(
         """
         INSERT INTO time_spans

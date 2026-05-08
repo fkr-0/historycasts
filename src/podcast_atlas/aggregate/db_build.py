@@ -5,6 +5,7 @@ import re
 import sqlite3
 from typing import Optional
 
+from ..provenance import ORIGIN_DET, ORIGIN_NONDET, new_run
 from .cluster import Point, k_for_n, kmeans
 from .extract import (
     clean_description,
@@ -15,7 +16,6 @@ from .extract import (
     segment_text,
 )
 from .gazetteer import load_gazetteer_csv, norm_key
-from ..provenance import ORIGIN_DET, ORIGIN_NONDET, new_run
 from .rss_parse import parse_rss
 from .schema import ensure_schema
 
@@ -552,7 +552,9 @@ def apply_heuristic_review_overrides(conn: sqlite3.Connection, *, year_max: int)
                 float(cand["score"]) + 0.01,
             ),
         )
-        conn.execute("UPDATE episodes SET best_span_id=? WHERE id=?", (int(cur.lastrowid), episode_id))
+        conn.execute(
+            "UPDATE episodes SET best_span_id=? WHERE id=?", (int(cur.lastrowid), episode_id)
+        )
         inserted += 1
     conn.commit()
     return inserted
@@ -566,8 +568,9 @@ def postprocess_derived_rows(
 ) -> dict[str, int]:
     deleted_future = cleanup_future_spans(conn, year_max=year_max)
     inserted_overrides = (
-        apply_heuristic_review_overrides(conn, year_max=year_max)
-        if enable_heuristic_review
-        else 0
+        apply_heuristic_review_overrides(conn, year_max=year_max) if enable_heuristic_review else 0
     )
-    return {"future_spans_deleted": deleted_future, "heuristic_overrides_inserted": inserted_overrides}
+    return {
+        "future_spans_deleted": deleted_future,
+        "heuristic_overrides_inserted": inserted_overrides,
+    }

@@ -57,7 +57,9 @@ def _load_cache(path: Path) -> dict[str, dict[str, float] | None]:
 
 def _save_cache(path: Path, cache: dict[str, dict[str, float] | None]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(cache, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
+    path.write_text(
+        json.dumps(cache, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8"
+    )
 
 
 def _list_candidates(conn: sqlite3.Connection) -> list[tuple[str, str, str]]:
@@ -79,11 +81,19 @@ def _list_candidates(conn: sqlite3.Connection) -> list[tuple[str, str, str]]:
     for norm_key, canonical_name, place_kind, _ in rows:
         if not canonical_name:
             continue
-        out.append((str(norm_key or "").strip(), str(canonical_name).strip(), str(place_kind or "unknown").strip()))
+        out.append(
+            (
+                str(norm_key or "").strip(),
+                str(canonical_name).strip(),
+                str(place_kind or "unknown").strip(),
+            )
+        )
     return out
 
 
-def _update_places_for_norm_key(conn: sqlite3.Connection, norm_key: str, lat: float, lon: float) -> int:
+def _update_places_for_norm_key(
+    conn: sqlite3.Connection, norm_key: str, lat: float, lon: float
+) -> int:
     cur = conn.execute(
         """
         UPDATE places
@@ -187,7 +197,11 @@ def enrich_missing_place_coordinates(
             else:
                 hit = resolver(canonical_name, place_kind)
                 if hit:
-                    cache[cache_key] = {"lat": float(hit.lat), "lon": float(hit.lon), "provider": hit.provider}
+                    cache[cache_key] = {
+                        "lat": float(hit.lat),
+                        "lon": float(hit.lon),
+                        "provider": hit.provider,
+                    }
                 else:
                     cache[cache_key] = None
                 if delay_seconds > 0:

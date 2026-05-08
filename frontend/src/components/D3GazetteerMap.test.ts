@@ -19,7 +19,13 @@ function makeDataset(): Dataset {
     },
     podcasts: [{ id: 1, title: "Testcast" }],
     episodes: [
-      { id: 1, podcast_id: 1, title: "One", pub_date_iso: "2020-01-01T00:00:00Z", best_place_id: 101 },
+      {
+        id: 1,
+        podcast_id: 1,
+        title: "One",
+        pub_date_iso: "2020-01-01T00:00:00Z",
+        best_place_id: 101,
+      },
       { id: 2, podcast_id: 1, title: "Two", pub_date_iso: "2020-01-02T00:00:00Z" },
       { id: 3, podcast_id: 1, title: "Three", pub_date_iso: "2020-01-03T00:00:00Z" },
     ],
@@ -68,7 +74,7 @@ function makeDataset(): Dataset {
 describe("buildGazetteerMapData", () => {
   it("returns visible and total geocoded episode stats and honors best_place_id", () => {
     const dataset = makeDataset()
-    const visibleEpisodes = dataset.episodes.filter((e) => e.id !== 2)
+    const visibleEpisodes = dataset.episodes.filter(e => e.id !== 2)
 
     const result = buildGazetteerMapData(dataset, visibleEpisodes)
 
