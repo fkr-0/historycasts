@@ -1,14 +1,14 @@
-import type { CenterTab } from "../../state/tabs";
+import type { CenterTab } from "../../state/tabs"
 
 export default function CenterTabs(props: {
-  tabs: CenterTab[];
-  activeTabId: CenterTab["id"];
-  onActivate: (id: CenterTab["id"]) => void;
-  onClose: (id: CenterTab["id"]) => void;
+  tabs: CenterTab[]
+  activeTabId: CenterTab["id"]
+  onActivate: (id: CenterTab["id"]) => void
+  onClose: (id: CenterTab["id"]) => void
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)]/65 p-2">
-      {props.tabs.map((tab) => (
+      {props.tabs.map(tab => (
         <div key={tab.id} className="inline-flex items-center gap-1">
           <button
             type="button"
@@ -35,5 +35,5 @@ export default function CenterTabs(props: {
         </div>
       ))}
     </div>
-  );
+  )
 }

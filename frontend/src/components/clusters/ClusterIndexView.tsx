@@ -20,8 +20,8 @@ export default function ClusterIndexView(props: {
   onSelectCluster: (clusterId: number) => void
 }) {
   const rows = useMemo<ClusterMetricRow[]>(() => {
-    const stats = new Map((props.dataset.cluster_stats ?? []).map((s) => [s.cluster_id, s]))
-    return props.dataset.clusters.map((c) => {
+    const stats = new Map((props.dataset.cluster_stats ?? []).map(s => [s.cluster_id, s]))
+    return props.dataset.clusters.map(c => {
       const s = stats.get(c.cluster.id)
       return {
         id: c.cluster.id,
@@ -30,7 +30,7 @@ export default function ClusterIndexView(props: {
         cohesion: s?.cohesion_proxy ?? 0,
         novelty: s ? 1 - (s.dominant_podcast_share ?? 1) : 0,
         spread: s?.temporal_span_years ?? 0,
-        topTerms: c.top_keywords.slice(0, 5).map((t) => t.phrase),
+        topTerms: c.top_keywords.slice(0, 5).map(t => t.phrase),
       }
     })
   }, [props.dataset.cluster_stats, props.dataset.clusters])
@@ -64,7 +64,7 @@ export default function ClusterIndexView(props: {
               aria-label="Sort clusters"
               className="ml-2"
               value={props.sortBy}
-              onChange={(e) => props.onSortChange(e.target.value as ClusterSort)}
+              onChange={e => props.onSortChange(e.target.value as ClusterSort)}
             >
               <option value="size">size</option>
               <option value="cohesion">cohesion</option>
@@ -75,11 +75,16 @@ export default function ClusterIndexView(props: {
         </div>
 
         <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-          {sortedRows.map((row) => (
-            <div key={row.id} className="rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-2)] p-2">
+          {sortedRows.map(row => (
+            <div
+              key={row.id}
+              className="rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-2)] p-2"
+            >
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <div className="text-sm font-semibold">#{row.id} {row.label}</div>
+                  <div className="text-sm font-semibold">
+                    #{row.id} {row.label}
+                  </div>
                   <div className="text-xs text-[color:var(--muted)]">{row.nMembers} episodes</div>
                 </div>
                 <button
@@ -105,7 +110,9 @@ export default function ClusterIndexView(props: {
                   <div className="font-semibold">{row.spread.toFixed(0)}</div>
                 </div>
               </div>
-              <div className="mt-2 text-xs text-[color:var(--muted)]">{row.topTerms.join(" · ") || "(no terms)"}</div>
+              <div className="mt-2 text-xs text-[color:var(--muted)]">
+                {row.topTerms.join(" · ") || "(no terms)"}
+              </div>
             </div>
           ))}
         </div>

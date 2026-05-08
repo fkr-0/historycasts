@@ -1,5 +1,5 @@
-import type { Dataset } from "../types"
 import type { SearchHit } from "../search/searchIndex"
+import type { Dataset } from "../types"
 
 function fmtType(t: string) {
   return t.replaceAll("_", " ")
@@ -29,9 +29,7 @@ export default function SearchResultsPanel(props: {
         <div className="text-sm font-semibold">
           {props.mode === "pinned" ? "Search results" : "Search preview"}
         </div>
-        <div className="text-xs text-[color:var(--muted)]">
-          {props.hits.length} hits
-        </div>
+        <div className="text-xs text-[color:var(--muted)]">{props.hits.length} hits</div>
       </div>
 
       <div className="mt-2 grid gap-2">
@@ -57,9 +55,7 @@ export default function SearchResultsPanel(props: {
                   {fmtType(d.type)} · {hit.score.toFixed(2)}
                 </div>
               </div>
-              <div className="mt-1 line-clamp-2 text-xs text-[color:var(--muted)]">
-                {d.text}
-              </div>
+              <div className="mt-1 line-clamp-2 text-xs text-[color:var(--muted)]">{d.text}</div>
             </button>
           )
         })}

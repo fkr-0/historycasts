@@ -1,16 +1,12 @@
-import { useEffect, useState } from "react";
-import {
-  readFiltersFromUrl,
-  writeFiltersToUrl,
-  type Filters,
-} from "../urlState";
+import { useEffect, useState } from "react"
+import { type Filters, readFiltersFromUrl, writeFiltersToUrl } from "../urlState"
 
 export function useUrlFilters() {
-  const [filters, setFilters] = useState<Filters>(() => readFiltersFromUrl());
+  const [filters, setFilters] = useState<Filters>(() => readFiltersFromUrl())
 
   useEffect(() => {
-    writeFiltersToUrl(filters);
-  }, [filters]);
+    writeFiltersToUrl(filters)
+  }, [filters])
 
-  return { filters, setFilters };
+  return { filters, setFilters }
 }

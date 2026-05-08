@@ -37,12 +37,15 @@ function colorForCluster(clusterId: number): string {
 
 export function buildGazetteerMapData(
   dataset: Dataset,
-  visibleEpisodes: Episode[],
+  visibleEpisodes: Episode[]
 ): { points: MapPoint[]; stats: MapStats } {
-  const geocodedByPlaceId = new Map<number, { episodeId: number; name: string; lat: number; lon: number }>()
+  const geocodedByPlaceId = new Map<
+    number,
+    { episodeId: number; name: string; lat: number; lon: number }
+  >()
   const firstGeocodedByEpisode = new Map<number, { name: string; lat: number; lon: number }>()
   const episodeById = new Map<number, Episode>()
-  const visibleEpisodeIdSet = new Set(visibleEpisodes.map((e) => e.id))
+  const visibleEpisodeIdSet = new Set(visibleEpisodes.map(e => e.id))
   const points: MapPoint[] = []
 
   for (const ep of dataset.episodes) episodeById.set(ep.id, ep)
@@ -60,7 +63,11 @@ export function buildGazetteerMapData(
   for (const ep of dataset.episodes) {
     const bestPlace = ep.best_place_id != null ? geocodedByPlaceId.get(ep.best_place_id) : undefined
     if (bestPlace) {
-      chosenGeocodedByEpisode.set(ep.id, { name: bestPlace.name, lat: bestPlace.lat, lon: bestPlace.lon })
+      chosenGeocodedByEpisode.set(ep.id, {
+        name: bestPlace.name,
+        lat: bestPlace.lat,
+        lon: bestPlace.lon,
+      })
       continue
     }
     const fallback = firstGeocodedByEpisode.get(ep.id)
@@ -103,7 +110,7 @@ export default function D3GazetteerMap(props: {
 
   const { points, stats } = useMemo(
     () => buildGazetteerMapData(props.dataset, props.episodes),
-    [props.dataset, props.episodes],
+    [props.dataset, props.episodes]
   )
 
   useEffect(() => {
@@ -116,14 +123,14 @@ export default function D3GazetteerMap(props: {
         {
           type: "scattergeo",
           mode: "markers",
-          lat: points.map((p) => p.lat),
-          lon: points.map((p) => p.lon),
-          text: points.map((p) => `${p.title}<br>${p.place}`),
+          lat: points.map(p => p.lat),
+          lon: points.map(p => p.lon),
+          text: points.map(p => `${p.title}<br>${p.place}`),
           customdata: points,
           hovertemplate: "%{text}<extra></extra>",
           marker: {
-            size: points.map((p) => (props.selectedEpisodeId === p.episodeId ? 10 : 7)),
-            color: points.map((p) => (p.clusterId ? colorForCluster(p.clusterId) : "#93a3b8")),
+            size: points.map(p => (props.selectedEpisodeId === p.episodeId ? 10 : 7)),
+            color: points.map(p => (p.clusterId ? colorForCluster(p.clusterId) : "#93a3b8")),
             opacity: 0.82,
             line: { width: 0.7, color: "rgba(255,255,255,0.35)" },
           },
@@ -148,7 +155,7 @@ export default function D3GazetteerMap(props: {
           bgcolor: "rgba(0,0,0,0)",
         },
       },
-      { displayModeBar: false, responsive: true },
+      { displayModeBar: false, responsive: true }
     )
 
     const onClick = (ev: unknown) => {
@@ -175,8 +182,8 @@ export default function D3GazetteerMap(props: {
       <div className="mb-2 flex items-baseline justify-between">
         <div className="text-sm font-semibold">Gazetteer map</div>
         <div className="text-xs text-[color:var(--muted)]">
-          {stats.visibleGeocodedEpisodes} shown / {stats.totalGeocodedEpisodes} geocoded ({stats.visibleEpisodes} filtered /{" "}
-          {stats.totalEpisodes} total episodes)
+          {stats.visibleGeocodedEpisodes} shown / {stats.totalGeocodedEpisodes} geocoded (
+          {stats.visibleEpisodes} filtered / {stats.totalEpisodes} total episodes)
         </div>
       </div>
       <div ref={plotRef} className="min-h-0 flex-1" />

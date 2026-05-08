@@ -1,25 +1,25 @@
-import type { Dataset } from "../../types";
-import D3GazetteerMap from "../D3GazetteerMap";
-import EpisodeRasterTimeline from "../EpisodeRasterTimeline";
-import GraphIntervalSlider from "../GraphIntervalSlider";
+import type { Dataset } from "../../types"
+import D3GazetteerMap from "../D3GazetteerMap"
+import EpisodeRasterTimeline from "../EpisodeRasterTimeline"
+import GraphIntervalSlider from "../GraphIntervalSlider"
 
 export default function ExploreTab(props: {
-  dataset: Dataset;
-  episodes: Dataset["episodes"];
-  selectedEpisodeId: number | null;
-  onSelectEpisode: (id: number) => void;
+  dataset: Dataset
+  episodes: Dataset["episodes"]
+  selectedEpisodeId: number | null
+  onSelectEpisode: (id: number) => void
 
-  scrubYear?: number;
-  onScrubYear: (y?: number) => void;
+  scrubYear?: number
+  onScrubYear: (y?: number) => void
 
-  availableYearRange: [number, number];
-  activeYearRange: [number, number];
-  sliderSpans: Dataset["spans"];
+  availableYearRange: [number, number]
+  activeYearRange: [number, number]
+  sliderSpans: Dataset["spans"]
 
-  axisDensityK: number;
-  topN: number;
+  axisDensityK: number
+  topN: number
 
-  onChangeActiveYearRange: (next: [number, number]) => void;
+  onChangeActiveYearRange: (next: [number, number]) => void
 }) {
   return (
     <div className="flex h-full flex-col gap-3">
@@ -51,5 +51,5 @@ export default function ExploreTab(props: {
         />
       </div>
     </div>
-  );
+  )
 }

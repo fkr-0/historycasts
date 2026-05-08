@@ -129,9 +129,7 @@ def build_report(db_path: Path, sample: int) -> dict[str, object]:
         """
     ).fetchall()
     bad_keywords = [
-        dict(r)
-        for r in keyword_rows
-        if any(m in r["phrase"].lower() for m in BAD_KEYWORD_MARKERS)
+        dict(r) for r in keyword_rows if any(m in r["phrase"].lower() for m in BAD_KEYWORD_MARKERS)
     ]
 
     links = cur.execute(
@@ -266,12 +264,12 @@ def write_markdown(report: dict[str, object], out_path: Path) -> None:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Generate reviewable data-quality candidates from SQLite.")
+    ap = argparse.ArgumentParser(
+        description="Generate reviewable data-quality candidates from SQLite."
+    )
     ap.add_argument("--db", default="active.db", help="Path to SQLite DB")
     ap.add_argument("--out", default="data/data_quality_review.md", help="Markdown output path")
-    ap.add_argument(
-        "--json-out", default="data/data_quality_review.json", help="JSON output path"
-    )
+    ap.add_argument("--json-out", default="data/data_quality_review.json", help="JSON output path")
     ap.add_argument("--sample", type=int, default=80, help="Max rows per section")
     ns = ap.parse_args()
 

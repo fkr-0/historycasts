@@ -35,7 +35,13 @@ export function buildClusterEpisodeUnlinkOp(args: {
     entity_type: "relation",
     entity_id: episodeId,
     op_type: "unlink",
-    payload: { table: "episode_clusters", left_id: episodeId, right_id: clusterId, left_col: "episode_id", right_col: "cluster_id" },
+    payload: {
+      table: "episode_clusters",
+      left_id: episodeId,
+      right_id: clusterId,
+      left_col: "episode_id",
+      right_col: "cluster_id",
+    },
     status: "queued",
     sql_preview: `DELETE FROM episode_clusters WHERE episode_id=${episodeId} AND cluster_id=${clusterId};`,
   }

@@ -1,14 +1,11 @@
-export type DocModalKind = "readme" | "changelog";
+export type DocModalKind = "readme" | "changelog"
 
 export function resolveDocsPath(kind: DocModalKind, baseUri: string = document.baseURI): string {
-  return new URL(`docs/${kind}.html`, baseUri).pathname;
+  return new URL(`docs/${kind}.html`, baseUri).pathname
 }
 
-export default function DocModal(props: {
-  kind: DocModalKind;
-  onClose: () => void;
-}) {
-  const docsUrl = resolveDocsPath(props.kind);
+export default function DocModal(props: { kind: DocModalKind; onClose: () => void }) {
+  const docsUrl = resolveDocsPath(props.kind)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[linear-gradient(160deg,rgba(18,15,29,0.82),rgba(28,24,48,0.74))] p-4 backdrop-blur-[2px]">
@@ -27,5 +24,5 @@ export default function DocModal(props: {
         />
       </div>
     </div>
-  );
+  )
 }

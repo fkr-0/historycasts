@@ -42,8 +42,7 @@ def test_ensure_schema_adds_episodes_raw_and_backfills_raw_id_for_legacy_rows() 
     ensure_schema(conn)
 
     tables = {
-        r[0]
-        for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+        r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
     }
     assert "episodes_raw" in tables
 

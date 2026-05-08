@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
-import ClusterDetail from "./ClusterDetail"
 import type { Dataset } from "../types"
+import ClusterDetail from "./ClusterDetail"
 
 function makeDataset(): Dataset {
   return {
@@ -98,7 +98,15 @@ function makeDataset(): Dataset {
       },
     ],
     cluster_term_metrics: [
-      { cluster_id: 7, term: "empire", tfidf: 1.2, support: 1, global_support: 2, lift: 1.1, drop_impact: 0.2 },
+      {
+        cluster_id: 7,
+        term: "empire",
+        tfidf: 1.2,
+        support: 1,
+        global_support: 2,
+        lift: 1.1,
+        drop_impact: 0.2,
+      },
       {
         cluster_id: 7,
         term: "constitution",
@@ -133,7 +141,7 @@ describe("ClusterDetail", () => {
         selectedEpisodeId={null}
         onSelectEpisode={vi.fn()}
         onSelectCluster={vi.fn()}
-      />,
+      />
     )
 
     expect(screen.getByRole("heading", { name: /entity lift/i })).toBeInTheDocument()
@@ -150,7 +158,7 @@ describe("ClusterDetail", () => {
         selectedEpisodeId={null}
         onSelectEpisode={vi.fn()}
         onSelectCluster={vi.fn()}
-      />,
+      />
     )
 
     const termNode = screen.getByRole("button", { name: /term node empire/i })

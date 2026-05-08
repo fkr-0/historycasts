@@ -1,54 +1,54 @@
-import { useCallback } from "react";
-import type { Dataset } from "../../types";
-import type { IntentOperation } from "../../intent/types";
-import EpisodesTable from "../EpisodesTable";
-import SearchResultsPanel from "../SearchResultsPanel";
-import { default as EpisodeDetail } from "../EpisodeDetail";
-import type { SearchHit } from "../../search/searchIndex";
-import type { SearchMode } from "../../app/useSearch";
+import { useCallback } from "react"
+import type { SearchMode } from "../../app/useSearch"
+import type { IntentOperation } from "../../intent/types"
+import type { SearchHit } from "../../search/searchIndex"
+import type { Dataset } from "../../types"
+import { default as EpisodeDetail } from "../EpisodeDetail"
+import EpisodesTable from "../EpisodesTable"
+import SearchResultsPanel from "../SearchResultsPanel"
 
 export default function RightPanel(props: {
-  dataset: Dataset;
+  dataset: Dataset
 
-  collapsed: boolean;
-  onUncollapse: () => void;
+  collapsed: boolean
+  onUncollapse: () => void
 
-  searchQuery: string;
-  searchHits: SearchHit[];
-  searchMode: SearchMode;
+  searchQuery: string
+  searchHits: SearchHit[]
+  searchMode: SearchMode
 
-  onSelectEpisode: (episodeId: number) => void;
-  onSelectCluster: (clusterId: number) => void;
-  onQueueOperation?: (op: IntentOperation) => void;
+  onSelectEpisode: (episodeId: number) => void
+  onSelectCluster: (clusterId: number) => void
+  onQueueOperation?: (op: IntentOperation) => void
 
-  episodes: Dataset["episodes"];
-  selectedEpisodeId: number | null;
+  episodes: Dataset["episodes"]
+  selectedEpisodeId: number | null
 
-  rightPanelRef: React.RefObject<HTMLDivElement>;
+  rightPanelRef: React.RefObject<HTMLDivElement>
 }) {
   const selectEpisodeFromSearch = useCallback(
     (episodeId: number) => {
-      props.onSelectEpisode(episodeId);
+      props.onSelectEpisode(episodeId)
       // push details into view (scroll results out)
-      props.rightPanelRef.current?.scrollTo({ top: 500, behavior: "smooth" });
+      props.rightPanelRef.current?.scrollTo({ top: 500, behavior: "smooth" })
     },
-    [props],
-  );
+    [props]
+  )
 
   const selectClusterFromSearch = useCallback(
     (clusterId: number) => {
-      props.onSelectCluster(clusterId);
-      props.rightPanelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+      props.onSelectCluster(clusterId)
+      props.rightPanelRef.current?.scrollTo({ top: 0, behavior: "smooth" })
     },
-    [props],
-  );
+    [props]
+  )
 
   if (props.collapsed) {
     return (
       <button type="button" onClick={props.onUncollapse} className="text-xs">
         ←
       </button>
-    );
+    )
   }
 
   return (
@@ -79,5 +79,5 @@ export default function RightPanel(props: {
         />
       </div>
     </div>
-  );
+  )
 }

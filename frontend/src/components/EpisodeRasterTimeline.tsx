@@ -27,7 +27,7 @@ export default function EpisodeRasterTimeline(props: EpisodeRasterTimelineProps)
   useEffect(() => {
     const root = rootRef.current
     if (!root) return
-    const ro = new ResizeObserver((entries) => {
+    const ro = new ResizeObserver(entries => {
       const r = entries[0]?.contentRect
       if (!r) return
       setDimensions({
@@ -41,7 +41,7 @@ export default function EpisodeRasterTimeline(props: EpisodeRasterTimelineProps)
 
   const rows = useMemo(
     () => buildEpisodeRasterRows(props.dataset, props.episodes),
-    [props.dataset, props.episodes],
+    [props.dataset, props.episodes]
   )
 
   const [minYear, maxYear] = useMemo<[number, number]>(() => {
@@ -61,19 +61,19 @@ export default function EpisodeRasterTimeline(props: EpisodeRasterTimelineProps)
 
   const clippedRows = useMemo(() => {
     return rows
-      .map((row) => ({
+      .map(row => ({
         ...row,
-        intervals: row.intervals.filter((it) => it.endYear >= minYear && it.startYear <= maxYear),
+        intervals: row.intervals.filter(it => it.endYear >= minYear && it.startYear <= maxYear),
       }))
-      .filter((row) => row.intervals.length > 0)
+      .filter(row => row.intervals.length > 0)
   }, [rows, minYear, maxYear])
 
   const density = useMemo(
     () => buildDensitySeries(clippedRows, minYear, maxYear),
-    [clippedRows, minYear, maxYear],
+    [clippedRows, minYear, maxYear]
   )
 
-  const densityMax = useMemo(() => Math.max(1, ...density.map((d) => d.count)), [density])
+  const densityMax = useMemo(() => Math.max(1, ...density.map(d => d.count)), [density])
 
   const innerWidth = Math.max(100, dimensions.width - MARGIN.left - MARGIN.right)
   const innerHeight = Math.max(100, dimensions.height - MARGIN.top - MARGIN.bottom)
@@ -81,7 +81,13 @@ export default function EpisodeRasterTimeline(props: EpisodeRasterTimelineProps)
   const rasterTop = MARGIN.top + densityHeight + 12
   const rasterHeight = Math.max(40, dimensions.height - rasterTop - MARGIN.bottom)
   const rowGap = 1
-  const rowHeight = Math.max(3, Math.floor((rasterHeight - rowGap * Math.max(0, clippedRows.length - 1)) / Math.max(1, clippedRows.length)))
+  const rowHeight = Math.max(
+    3,
+    Math.floor(
+      (rasterHeight - rowGap * Math.max(0, clippedRows.length - 1)) /
+        Math.max(1, clippedRows.length)
+    )
+  )
 
   const x = (year: number) => {
     const f = (year - minYear) / Math.max(1, maxYear - minYear)
@@ -97,7 +103,7 @@ export default function EpisodeRasterTimeline(props: EpisodeRasterTimelineProps)
     const approx = Math.max(3, Math.floor(innerWidth / 90))
     const rawStep = Math.max(1, span / approx)
     const base = 10 ** Math.floor(Math.log10(rawStep))
-    const step = [1, 2, 5, 10].map((v) => v * base).find((v) => v >= rawStep) ?? base * 10
+    const step = [1, 2, 5, 10].map(v => v * base).find(v => v >= rawStep) ?? base * 10
     const out: number[] = []
     const first = Math.ceil(minYear / step) * step
     for (let y = first; y <= maxYear; y += step) out.push(y)
@@ -117,12 +123,32 @@ export default function EpisodeRasterTimeline(props: EpisodeRasterTimelineProps)
         <span>{clippedRows.length} episodes</span>
       </div>
 
-      <svg width={dimensions.width} height={dimensions.height - 28} style={{ display: "block", width: "100%", height: "calc(100% - 24px)" }}>
-        <line x1={MARGIN.left} x2={MARGIN.left} y1={MARGIN.top} y2={MARGIN.top + densityHeight} stroke="rgba(230,230,250,0.35)" strokeWidth={1} />
-        <line x1={MARGIN.left} x2={MARGIN.left + innerWidth} y1={MARGIN.top + densityHeight} y2={MARGIN.top + densityHeight} stroke="rgba(230,230,250,0.35)" strokeWidth={1} />
-        <text x={8} y={MARGIN.top + 12} fill="rgba(230,230,250,0.9)" fontSize={11}>episodes</text>
+      <svg
+        width={dimensions.width}
+        height={dimensions.height - 28}
+        style={{ display: "block", width: "100%", height: "calc(100% - 24px)" }}
+      >
+        <line
+          x1={MARGIN.left}
+          x2={MARGIN.left}
+          y1={MARGIN.top}
+          y2={MARGIN.top + densityHeight}
+          stroke="rgba(230,230,250,0.35)"
+          strokeWidth={1}
+        />
+        <line
+          x1={MARGIN.left}
+          x2={MARGIN.left + innerWidth}
+          y1={MARGIN.top + densityHeight}
+          y2={MARGIN.top + densityHeight}
+          stroke="rgba(230,230,250,0.35)"
+          strokeWidth={1}
+        />
+        <text x={8} y={MARGIN.top + 12} fill="rgba(230,230,250,0.9)" fontSize={11}>
+          episodes
+        </text>
 
-        {density.map((d) => {
+        {density.map(d => {
           const x0 = x(d.year)
           const x1 = x(d.year + 1)
           return (
@@ -141,18 +167,29 @@ export default function EpisodeRasterTimeline(props: EpisodeRasterTimelineProps)
           )
         })}
 
-        <line x1={MARGIN.left} x2={MARGIN.left} y1={rasterTop} y2={rasterTop + rasterHeight} stroke="rgba(230,230,250,0.35)" strokeWidth={1} />
+        <line
+          x1={MARGIN.left}
+          x2={MARGIN.left}
+          y1={rasterTop}
+          y2={rasterTop + rasterHeight}
+          stroke="rgba(230,230,250,0.35)"
+          strokeWidth={1}
+        />
 
         {clippedRows.map((row, idx) => {
           const y = rasterTop + idx * (rowHeight + rowGap)
           return (
             <g key={`row-${row.episodeId}`}>
-              {row.intervals.map((it) => {
+              {row.intervals.map(it => {
                 const x0 = x(it.startYear)
                 const x1 = x(it.endYear + 1)
                 const active = props.selectedEpisodeId === row.episodeId
                 return (
-                  <g key={it.id} onClick={() => props.onSelectEpisode(row.episodeId)} style={{ cursor: "pointer" }}>
+                  <g
+                    key={it.id}
+                    onClick={() => props.onSelectEpisode(row.episodeId)}
+                    style={{ cursor: "pointer" }}
+                  >
                     <TimelineBarBlock
                       x={x0}
                       y={y}
@@ -172,12 +209,25 @@ export default function EpisodeRasterTimeline(props: EpisodeRasterTimelineProps)
           )
         })}
 
-        {xTicks.map((year) => {
+        {xTicks.map(year => {
           const xx = x(year)
           return (
             <g key={`tick-${year}`}>
-              <line x1={xx} x2={xx} y1={rasterTop + rasterHeight} y2={rasterTop + rasterHeight + 5} stroke="rgba(230,230,250,0.42)" strokeWidth={1} />
-              <text x={xx} y={rasterTop + rasterHeight + 18} textAnchor="middle" fill="rgba(230,230,250,0.9)" fontSize={11}>
+              <line
+                x1={xx}
+                x2={xx}
+                y1={rasterTop + rasterHeight}
+                y2={rasterTop + rasterHeight + 5}
+                stroke="rgba(230,230,250,0.42)"
+                strokeWidth={1}
+              />
+              <text
+                x={xx}
+                y={rasterTop + rasterHeight + 18}
+                textAnchor="middle"
+                fill="rgba(230,230,250,0.9)"
+                fontSize={11}
+              >
                 {year < 0 ? `${Math.abs(year)} BCE` : year}
               </text>
             </g>

@@ -30,12 +30,7 @@ const parseKind = (value: string | null): Filters["kind"] => {
 }
 
 const parseClusterSort = (value: string | null): Filters["clusterSort"] => {
-  if (
-    value === "size" ||
-    value === "cohesion" ||
-    value === "novelty" ||
-    value === "spread"
-  ) {
+  if (value === "size" || value === "cohesion" || value === "novelty" || value === "spread") {
     return value
   }
   return "size"
@@ -86,10 +81,12 @@ export function writeFiltersToUrl(f: Filters) {
   if (f.clusterTerm) p.set("clusterTerm", f.clusterTerm)
   else p.delete("clusterTerm")
 
-  if (f.clusterYearMin != null && !Number.isNaN(f.clusterYearMin)) p.set("clusterYearMin", String(f.clusterYearMin))
+  if (f.clusterYearMin != null && !Number.isNaN(f.clusterYearMin))
+    p.set("clusterYearMin", String(f.clusterYearMin))
   else p.delete("clusterYearMin")
 
-  if (f.clusterYearMax != null && !Number.isNaN(f.clusterYearMax)) p.set("clusterYearMax", String(f.clusterYearMax))
+  if (f.clusterYearMax != null && !Number.isNaN(f.clusterYearMax))
+    p.set("clusterYearMax", String(f.clusterYearMax))
   else p.delete("clusterYearMax")
 
   if (f.clusterSort) p.set("clusterSort", f.clusterSort)

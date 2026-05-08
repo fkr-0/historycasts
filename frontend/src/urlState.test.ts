@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest"
-import { readFiltersFromUrl, writeFiltersToUrl, type Filters } from "./urlState"
+import { type Filters, readFiltersFromUrl, writeFiltersToUrl } from "./urlState"
 
 describe("urlState cluster scope", () => {
   it("reads cluster scope and sort from URL", () => {
     window.history.replaceState(
       {},
       "",
-      "/?podcast=all&topN=2&axisK=1&cluster=9&clusterTerm=empire&clusterYearMin=1800&clusterYearMax=1810&clusterSort=spread",
+      "/?podcast=all&topN=2&axisK=1&cluster=9&clusterTerm=empire&clusterYearMin=1800&clusterYearMax=1810&clusterSort=spread"
     )
 
     const filters = readFiltersFromUrl()

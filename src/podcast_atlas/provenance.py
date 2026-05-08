@@ -146,7 +146,9 @@ def _column_names(conn: sqlite3.Connection, table: str) -> set[str]:
     return {str(r[1]) for r in rows}
 
 
-def _add_column_if_missing(conn: sqlite3.Connection, table: str, col_sql: str, col_name: str) -> None:
+def _add_column_if_missing(
+    conn: sqlite3.Connection, table: str, col_sql: str, col_name: str
+) -> None:
     cols = _column_names(conn, table)
     if col_name in cols:
         return
@@ -211,9 +213,9 @@ def ensure_provenance_schema(conn: sqlite3.Connection) -> None:
         cols = _column_names(conn, table)
         if "run_id" not in cols:
             continue
-        null_count = conn.execute(
-            f"SELECT COUNT(*) FROM {table} WHERE run_id IS NULL"
-        ).fetchone()[0]
+        null_count = conn.execute(f"SELECT COUNT(*) FROM {table} WHERE run_id IS NULL").fetchone()[
+            0
+        ]
         if int(null_count) <= 0:
             continue
         if det_run_id is None:

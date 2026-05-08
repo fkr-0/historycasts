@@ -279,7 +279,9 @@ def export_dataset(db_path: Path | str) -> Dict[str, Any]:
     entities: List[Dict[str, Any]] = []
     if "entities" in tables:
         if "v_ui_entities" in views:
-            cur.execute("SELECT id, episode_id, name, kind, confidence, source_text FROM v_ui_entities")
+            cur.execute(
+                "SELECT id, episode_id, name, kind, confidence, source_text FROM v_ui_entities"
+            )
         else:
             cur.execute("SELECT id, episode_id, name, kind, confidence, source_text FROM entities")
         for row in cur.fetchall():
