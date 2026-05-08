@@ -6,7 +6,7 @@ import os
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Literal, Tuple
 
 from .export.cluster_metrics import compute_cluster_metrics
 from .models import (
@@ -67,7 +67,13 @@ FINGERPRINT_FIELDS_CLUSTER = (
     "label",
 )
 
-VALID_PLACE_KINDS = {"city", "region", "country", "river", "unknown"}
+VALID_PLACE_KINDS: set[Literal["city", "region", "country", "river", "unknown"]] = {
+    "city",
+    "region",
+    "country",
+    "river",
+    "unknown",
+}
 
 
 def _dataset_revision(db_path: Path | str) -> str:
@@ -109,12 +115,20 @@ def _col_or_null(cols: set[str], name: str, alias: str | None = None) -> str:
     return f"NULL AS {alias or name}"
 
 
-def _normalize_place_kind(raw_kind: Any) -> str:
+def _normalize_place_kind(
+    raw_kind: Any,
+) -> Literal["city", "region", "country", "river", "unknown"]:
     kind = str(raw_kind or "").strip().lower()
-    if not kind:
+    if kind == "city":
+        return "city"
+    if kind == "region":
+        return "region"
+    if kind == "country":
+        return "country"
+    if kind == "river":
+        return "river"
+    if kind == "unknown":
         return "unknown"
-    if kind in VALID_PLACE_KINDS:
-        return kind
     return "unknown"
 
 

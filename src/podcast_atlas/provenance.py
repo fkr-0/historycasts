@@ -173,7 +173,10 @@ def new_run(
             json.dumps(params or {}, ensure_ascii=False, sort_keys=True),
         ),
     )
-    run_id = int(cur.lastrowid)
+    rowid = cur.lastrowid
+    if rowid is None:
+        raise RuntimeError("sqlite lastrowid is None after runs insert")
+    run_id = int(rowid)
     conn.commit()
     return run_id
 

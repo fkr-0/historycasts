@@ -43,7 +43,7 @@ def _nominatim_resolver(*, user_agent: str) -> Resolver:
     return _resolve
 
 
-def _load_cache(path: Path) -> dict[str, dict[str, float] | None]:
+def _load_cache(path: Path) -> dict[str, dict[str, float | str] | None]:
     if not path.exists():
         return {}
     try:
@@ -55,7 +55,7 @@ def _load_cache(path: Path) -> dict[str, dict[str, float] | None]:
     return {}
 
 
-def _save_cache(path: Path, cache: dict[str, dict[str, float] | None]) -> None:
+def _save_cache(path: Path, cache: dict[str, dict[str, float | str] | None]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(cache, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8"

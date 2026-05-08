@@ -4,8 +4,10 @@ import html
 import json
 import shutil
 import subprocess
+from collections.abc import Sized
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from .export.site import render_markdown_docs
 from .static_export import export_dataset, write_json
@@ -32,25 +34,31 @@ def build_static(
 
 
 def _write_build_report(
-    *, db_path: Path, dataset_out: Path, payload: dict[str, object], out_dir: Path
+    *, db_path: Path, dataset_out: Path, payload: dict[str, Any], out_dir: Path
 ) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    def _count_items(value: object) -> int:
+        return len(value) if isinstance(value, Sized) else 0
+
     counts = {
-        "podcasts": len(payload.get("podcasts", [])),
-        "episodes": len(payload.get("episodes", [])),
-        "spans": len(payload.get("spans", [])),
-        "places": len(payload.get("places", [])),
-        "entities": len(payload.get("entities", [])),
-        "clusters": len(payload.get("clusters", [])),
-        "concepts": len(payload.get("concepts", [])),
-        "concept_claims": len(payload.get("concept_claims", [])),
+        "podcasts": _count_items(payload.get("podcasts", [])),
+        "episodes": _count_items(payload.get("episodes", [])),
+        "spans": _count_items(payload.get("spans", [])),
+        "places": _count_items(payload.get("places", [])),
+        "entities": _count_items(payload.get("entities", [])),
+        "clusters": _count_items(payload.get("clusters", [])),
+        "concepts": _count_items(payload.get("concepts", [])),
+        "concept_claims": _count_items(payload.get("concept_claims", [])),
     }
+    generated_at = datetime.now(timezone.utc).isoformat()
+    db_path_str = str(db_path)
+    dataset_path_str = str(dataset_out)
     report = {
-        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
-        "db_path": str(db_path),
+        "generated_at_utc": generated_at,
+        "db_path": db_path_str,
         "db_size_bytes": db_path.stat().st_size if db_path.exists() else 0,
-        "dataset_path": str(dataset_out),
+        "dataset_path": dataset_path_str,
         "dataset_size_bytes": dataset_out.stat().st_size if dataset_out.exists() else 0,
         "counts": counts,
     }
@@ -74,9 +82,9 @@ def _write_build_report(
         "code{background:#f4f4f4;padding:.1rem .3rem;border-radius:4px}"
         "</style></head><body>"
         "<h1>Historycasts Build Report</h1>"
-        f"<p><strong>Generated:</strong> {html.escape(report['generated_at_utc'])}</p>"
-        f"<p><strong>DB:</strong> <code>{html.escape(report['db_path'])}</code> ({report['db_size_bytes']} bytes)</p>"
-        f"<p><strong>Dataset:</strong> <code>{html.escape(report['dataset_path'])}</code> ({report['dataset_size_bytes']} bytes)</p>"
+        f"<p><strong>Generated:</strong> {html.escape(generated_at)}</p>"
+        f"<p><strong>DB:</strong> <code>{html.escape(db_path_str)}</code> ({report['db_size_bytes']} bytes)</p>"
+        f"<p><strong>Dataset:</strong> <code>{html.escape(dataset_path_str)}</code> ({report['dataset_size_bytes']} bytes)</p>"
         "<h2>Dataset Counts</h2>"
         "<table><tr><th>Metric</th><th>Count</th></tr>"
         f"{rows}</table>"

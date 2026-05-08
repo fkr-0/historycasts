@@ -20,6 +20,13 @@ def _row_exists(conn: sqlite3.Connection, sql: str, params: tuple[Any, ...]) -> 
     return row is not None
 
 
+def _rowid(cur: sqlite3.Cursor) -> int:
+    rowid = cur.lastrowid
+    if rowid is None:
+        raise RuntimeError("sqlite lastrowid is None after insert")
+    return int(rowid)
+
+
 def _timespan_fields(span: dict[str, Any]) -> tuple[str, str]:
     gran = str(span.get("granularity") or "").lower()
     if gran == "date":
@@ -137,7 +144,7 @@ def merge_handcrafted_metadata(
                 )
                 counters["timespans_inserted"] += 1
                 if update_episode_best_refs and best_span_id is None:
-                    best_span_id = int(cur.lastrowid)
+                    best_span_id = _rowid(cur)
 
             for pl in meta.get("places") or []:
                 if not isinstance(pl, dict):
@@ -158,7 +165,7 @@ def merge_handcrafted_metadata(
                         "INSERT INTO places_norm (norm_key, canonical_name, place_kind) VALUES (?, ?, ?)",
                         (nk, canonical_name, place_kind),
                     )
-                    place_norm_id = int(cur.lastrowid)
+                    place_norm_id = _rowid(cur)
                 else:
                     place_norm_id = int(pn_row[0])
 
@@ -188,7 +195,7 @@ def merge_handcrafted_metadata(
                 )
                 counters["places_inserted"] += 1
                 if update_episode_best_refs and best_place_id is None:
-                    best_place_id = int(cur.lastrowid)
+                    best_place_id = _rowid(cur)
 
             seen_entities: set[tuple[str, str]] = set()
             for key in ("people", "hosts", "guests"):

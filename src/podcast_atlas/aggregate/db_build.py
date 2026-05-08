@@ -552,9 +552,7 @@ def apply_heuristic_review_overrides(conn: sqlite3.Connection, *, year_max: int)
                 float(cand["score"]) + 0.01,
             ),
         )
-        conn.execute(
-            "UPDATE episodes SET best_span_id=? WHERE id=?", (int(cur.lastrowid), episode_id)
-        )
+        conn.execute("UPDATE episodes SET best_span_id=? WHERE id=?", (_rowid(cur), episode_id))
         inserted += 1
     conn.commit()
     return inserted
