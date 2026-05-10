@@ -1,5 +1,7 @@
 import { useMemo } from "react"
 import type { Dataset } from "../../types"
+import { colorForCluster } from "../../visual/clusterVisuals"
+import ClusterLegend from "../ClusterLegend"
 
 export type ClusterSort = "size" | "cohesion" | "novelty" | "spread"
 
@@ -74,6 +76,10 @@ export default function ClusterIndexView(props: {
           </label>
         </div>
 
+        <div className="mb-3">
+          <ClusterLegend dataset={props.dataset} />
+        </div>
+
         <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
           {sortedRows.map(row => (
             <div
@@ -82,8 +88,15 @@ export default function ClusterIndexView(props: {
             >
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <div className="text-sm font-semibold">
-                    #{row.id} {row.label}
+                  <div className="flex items-center gap-1.5 text-sm font-semibold">
+                    <span
+                      aria-hidden="true"
+                      className="inline-block h-2.5 w-2.5 rounded-full"
+                      style={{ backgroundColor: colorForCluster(row.id) }}
+                    />
+                    <span>
+                      #{row.id} {row.label}
+                    </span>
                   </div>
                   <div className="text-xs text-[color:var(--muted)]">{row.nMembers} episodes</div>
                 </div>

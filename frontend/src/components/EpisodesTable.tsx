@@ -6,7 +6,7 @@ import {
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import type { Dataset } from "../types"
 
 type Episode = Dataset["episodes"][number]
@@ -19,12 +19,7 @@ export default function EpisodesTable(props: {
   selectedEpisodeId: number | null
   onSelectEpisode: (id: number) => void
 }) {
-  const [sorting, setSorting] = useMemo(
-    () => [[], () => {}] as unknown as [SortingState, (s: SortingState) => void],
-    []
-  )
-  // NOTE: keep this super light; if you want persistent sorting, lift state to parent.
-  // (We can wire it later; leaving minimal to avoid UI bloat.)
+  const [sorting, setSorting] = useState<SortingState>([])
 
   const columns = useMemo(
     () => [
@@ -73,12 +68,22 @@ export default function EpisodesTable(props: {
             {table.getHeaderGroups().map(hg => (
               <tr key={hg.id}>
                 {hg.headers.map(h => (
-                  <th
-                    key={h.id}
-                    className="px-3 py-2 text-xs text-[color:var(--muted)]"
-                    onClick={h.column.getToggleSortingHandler()}
-                  >
-                    {flexRender(h.column.columnDef.header, h.getContext())}
+                  <th key={h.id} className="px-3 py-2 text-xs text-[color:var(--muted)]">
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 rounded-md border-0 bg-transparent p-0 text-xs text-[color:var(--muted)] hover:bg-transparent"
+                      aria-label={`Sort by ${String(h.column.columnDef.header)}`}
+                      onClick={h.column.getToggleSortingHandler()}
+                    >
+                      {flexRender(h.column.columnDef.header, h.getContext())}
+                      <span aria-hidden="true">
+                        {h.column.getIsSorted() === "asc"
+                          ? "↑"
+                          : h.column.getIsSorted() === "desc"
+                            ? "↓"
+                            : "↕"}
+                      </span>
+                    </button>
                   </th>
                 ))}
               </tr>

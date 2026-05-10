@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import type { Dataset } from "../types"
+import ClusterLegend from "./ClusterLegend"
 import EpisodesTable from "./EpisodesTable"
 import GraphIntervalSlider from "./GraphIntervalSlider"
 
@@ -306,6 +307,10 @@ export default function ClusterDetail(props: {
             centroid: {cluster.cluster.centroid_mid_year.toFixed(0)} ·{" "}
             {cluster.cluster.centroid_lat.toFixed(1)}, {cluster.cluster.centroid_lon.toFixed(1)}
           </div>
+        </div>
+
+        <div className="mt-3">
+          <ClusterLegend dataset={props.dataset} clusterIds={[props.clusterId]} />
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-2 text-xs md:grid-cols-5">

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import type { Dataset } from "../types"
 import { buildDensitySeries, buildEpisodeRasterRows } from "../utils/episodeRaster"
+import { colorForCluster } from "../visual/clusterVisuals"
 import TimelineBarBlock from "./timeline/TimelineBarBlock"
 
 type Episode = Dataset["episodes"][number]
@@ -14,11 +15,6 @@ export interface EpisodeRasterTimelineProps {
 }
 
 const MARGIN = { top: 16, right: 20, bottom: 30, left: 66 }
-
-function colorForPodcast(podcastId: number): string {
-  const hue = (podcastId * 67) % 360
-  return `hsl(${hue}, 68%, 56%)`
-}
 
 export default function EpisodeRasterTimeline(props: EpisodeRasterTimelineProps): JSX.Element {
   const rootRef = useRef<HTMLDivElement>(null)
@@ -195,7 +191,7 @@ export default function EpisodeRasterTimeline(props: EpisodeRasterTimelineProps)
                       y={y}
                       width={Math.max(1.5, x1 - x0)}
                       height={rowHeight}
-                      fill={colorForPodcast(row.podcastId)}
+                      fill={row.clusterId ? colorForCluster(row.clusterId) : "#93a3b8"}
                       stroke={active ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.16)"}
                       strokeWidth={active ? 1.2 : 0.45}
                       rx={1.2}

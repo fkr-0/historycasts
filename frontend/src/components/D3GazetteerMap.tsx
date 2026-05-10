@@ -1,6 +1,8 @@
 import Plotly from "plotly.js-dist-min"
 import { useEffect, useMemo, useRef } from "react"
 import type { Dataset } from "../types"
+import { colorForCluster } from "../visual/clusterVisuals"
+import ClusterLegend from "./ClusterLegend"
 
 // Simple “dots on a projected plane” map.
 // No topojson world outline (keeps it small & static-host friendly).
@@ -28,11 +30,6 @@ type PlotlyClickEvent = { points?: PlotlyEventPoint[] }
 type PlotlyDiv = HTMLDivElement & {
   on: (event: string, handler: (ev: unknown) => void) => void
   removeAllListeners: (event: string) => void
-}
-
-function colorForCluster(clusterId: number): string {
-  const h = (clusterId * 47) % 360
-  return `hsl(${h},65%,45%)`
 }
 
 export function buildGazetteerMapData(
@@ -177,6 +174,10 @@ export default function D3GazetteerMap(props: {
     }
   }, [points, props.selectedEpisodeId, props.onSelectEpisode])
 
+  const visibleClusterIds = [
+    ...new Set(points.map(p => p.clusterId).filter((id): id is number => id != null)),
+  ]
+
   return (
     <div className="flex h-full min-h-0 w-full flex-col overflow-visible rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)]/60 p-2">
       <div className="mb-2 flex items-baseline justify-between">
@@ -186,6 +187,11 @@ export default function D3GazetteerMap(props: {
           {stats.visibleEpisodes} filtered / {stats.totalEpisodes} total episodes)
         </div>
       </div>
+      {visibleClusterIds.length > 0 && (
+        <div className="mb-2">
+          <ClusterLegend dataset={props.dataset} clusterIds={visibleClusterIds} />
+        </div>
+      )}
       <div ref={plotRef} className="min-h-0 flex-1" />
     </div>
   )

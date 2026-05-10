@@ -58,6 +58,49 @@ def clean_description(raw: str) -> str:
     return "\n".join(lines).strip()
 
 
+_SEGMENT_NOISE_EXACT = {
+    "aus unserer werbung",
+    "literatur",
+    "erwähnte folgen",
+    "podcasts des monats",
+    "links",
+    "erwähnte episoden",
+    "besprochene folgen",
+    "im buch erwähnte folgen",
+    "museen & ausstellungen",
+    "erwähnte literatur",
+    "episodenbild",
+    "musik",
+    "tools",
+}
+
+_SEGMENT_NOISE_MARKERS = [
+    "apple podcasts",
+    "itunes",
+    "podcastplattform panoptikum",
+    "podcasthörer",
+    "freundinnen und freunden",
+    "kolleginnen und kollegen",
+    "nachbarinnen und nachbarn",
+    "wir haben auch ein buch geschrieben",
+    "piper.de/buecher/geschichten-aus-der-geschichte",
+    "campfirefm",
+    "geschichte.shop",
+    "amazon.de/gp/product",
+    "werbepartner",
+    "linktr.ee/geschichtenausdergeschichte",
+]
+
+
+def _is_noise_segment(block: str) -> bool:
+    s = " ".join(block.strip().split()).casefold()
+    if not s:
+        return True
+    if s in _SEGMENT_NOISE_EXACT:
+        return True
+    return any(marker in s for marker in _SEGMENT_NOISE_MARKERS)
+
+
 def segment_text(pure: str) -> list[tuple[str, str]]:
     """Return list of (section, segment_text)."""
     segs: list[tuple[str, str]] = []
@@ -65,6 +108,8 @@ def segment_text(pure: str) -> list[tuple[str, str]]:
     for i, block in enumerate(re.split(r"\n\s*\n", pure)):
         b = block.strip()
         if not b:
+            continue
+        if _is_noise_segment(b):
             continue
         section = "main"
         if b.lower().startswith("das erwartet") or b.lower().startswith("ihr hört"):
@@ -391,6 +436,9 @@ _STOP_DE = {
     "bewertet",
     "folge",
     "folgen",
+    "feedback",
+    "themenvorschlag",
+    "quellen",
 }
 
 _NOISE_TOKEN_RE = re.compile(r"^(?:gag\d+|feedgag\d+)$")
@@ -402,6 +450,13 @@ _NOISE_PHRASE_MARKERS = [
     "hosted on",
     "podcasthörer",
     "freuen uns wenn",
+    "immer dies möglich",
+    "uns empfehlen",
+    "uns erzählt",
+    "du hast",
+    "themenvorschlag",
+    "quellen",
+    "instagram",
 ]
 
 
