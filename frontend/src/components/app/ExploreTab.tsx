@@ -22,8 +22,8 @@ export default function ExploreTab(props: {
   onChangeActiveYearRange: (next: [number, number]) => void
 }) {
   return (
-    <div className="flex h-full flex-col gap-3">
-      <div className="min-h-[300px] flex-[0_0_56%] overflow-hidden rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)]/60 p-2 pr-4">
+    <div className="flex h-full min-h-[1200px] flex-col gap-3">
+      <div className="min-h-[240px] flex-[0_0_40%] overflow-hidden rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)]/60 p-2 pr-4 md:min-h-[280px]">
         <EpisodeRasterTimeline
           dataset={props.dataset}
           episodes={props.episodes}
@@ -41,7 +41,7 @@ export default function ExploreTab(props: {
         onChange={props.onChangeActiveYearRange}
       />
 
-      <div className="min-h-[320px] flex-1 overflow-visible rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)]/60 p-2">
+      <div className="min-h-[520px] flex-1 overflow-visible rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)]/60 p-2 md:min-h-[640px] lg:min-h-[760px]">
         <D3GazetteerMap
           dataset={props.dataset}
           episodes={props.episodes}

@@ -1,4 +1,5 @@
-import { Group, Panel, Separator } from "react-resizable-panels"
+import { useEffect, useRef } from "react"
+import { Group, Panel, Separator, type ImperativePanelHandle } from "react-resizable-panels"
 
 export default function AppFrame(props: {
   left: React.ReactNode
@@ -7,13 +8,31 @@ export default function AppFrame(props: {
   leftCollapsed?: boolean
   rightCollapsed?: boolean
 }) {
+  const leftPanelRef = useRef<ImperativePanelHandle>(null)
+  const rightPanelRef = useRef<ImperativePanelHandle>(null)
+
+  useEffect(() => {
+    const panel = leftPanelRef.current
+    if (!panel) return
+    if (props.leftCollapsed) panel.collapse()
+    else panel.expand()
+  }, [props.leftCollapsed])
+
+  useEffect(() => {
+    const panel = rightPanelRef.current
+    if (!panel) return
+    if (props.rightCollapsed) panel.collapse()
+    else panel.expand()
+  }, [props.rightCollapsed])
+
   return (
     <div className="h-screen">
       <Group direction="horizontal">
         <Panel
-          defaultSize={props.leftCollapsed ? 4 : 24}
-          minSize={props.leftCollapsed ? 4 : 16}
-          maxSize={props.leftCollapsed ? 4 : 42}
+          ref={leftPanelRef}
+          defaultSize={24}
+          minSize={16}
+          maxSize={42}
           collapsible
           collapsedSize={4}
           className="overflow-auto border-r border-[color:var(--border)] bg-[color:var(--surface)]/92 p-3"
@@ -30,9 +49,10 @@ export default function AppFrame(props: {
         <Separator className="w-1 cursor-ew-resize bg-[color:var(--border)] transition-colors hover:bg-[color:var(--accent)]" />
 
         <Panel
-          defaultSize={props.rightCollapsed ? 4 : 28}
-          minSize={props.rightCollapsed ? 4 : 16}
-          maxSize={props.rightCollapsed ? 4 : 45}
+          ref={rightPanelRef}
+          defaultSize={28}
+          minSize={16}
+          maxSize={45}
           collapsible
           collapsedSize={4}
           className="overflow-hidden border-l border-[color:var(--border)] bg-[color:var(--surface)]/92 p-4"

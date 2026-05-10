@@ -19,10 +19,14 @@ export type HeaderBarProps = {
 
 export default function HeaderBar(props: HeaderBarProps) {
   const buildReportHref = new URL("docs/build-report.html", document.baseURI).pathname
+  const releaseVersion = "v0.3.6"
 
   return (
     <div className="sticky top-0 z-30 -mx-3 -mt-3 mb-3 border-b border-[color:var(--border)] bg-[color:var(--surface)]/90 p-3 backdrop-blur">
       <div className="flex flex-wrap items-center gap-2">
+        <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-2)] px-2 py-1 text-xs font-semibold tracking-wide">
+          HISTORYCASTS {releaseVersion}
+        </div>
         <div className="min-w-[260px] flex-1">
           <SearchBar
             value={props.searchValue}
