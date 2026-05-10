@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.3.5] - 2026-05-10
+
+### Fixed
+- Fixed three-pane divider behavior in `AppFrame` by using numeric panel sizes and rebalancing min/default widths so left/right panes are practically resizable and no longer squeezed.
+
 ## [0.3.4] - 2026-05-10
 
 ### Added

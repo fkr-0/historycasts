@@ -11,8 +11,8 @@ export default function AppFrame(props: {
     <div className="h-screen">
       <Group direction="horizontal">
         <Panel
-          defaultSize={props.leftCollapsed ? 4 : 22}
-          minSize={props.leftCollapsed ? 4 : 12}
+          defaultSize={props.leftCollapsed ? 4 : 24}
+          minSize={props.leftCollapsed ? 4 : 16}
           maxSize={props.leftCollapsed ? 4 : 42}
           collapsible
           collapsedSize={4}
@@ -23,15 +23,15 @@ export default function AppFrame(props: {
 
         <Separator className="w-1 cursor-ew-resize bg-[color:var(--border)] transition-colors hover:bg-[color:var(--accent)]" />
 
-        <Panel defaultSize="53%" minSize="22%" className="overflow-hidden p-3 md:p-4">
+        <Panel defaultSize={48} minSize={28} className="overflow-hidden p-3 md:p-4">
           {props.center}
         </Panel>
 
         <Separator className="w-1 cursor-ew-resize bg-[color:var(--border)] transition-colors hover:bg-[color:var(--accent)]" />
 
         <Panel
-          defaultSize={props.rightCollapsed ? 4 : 25}
-          minSize={props.rightCollapsed ? 4 : 12}
+          defaultSize={props.rightCollapsed ? 4 : 28}
+          minSize={props.rightCollapsed ? 4 : 16}
           maxSize={props.rightCollapsed ? 4 : 45}
           collapsible
           collapsedSize={4}
