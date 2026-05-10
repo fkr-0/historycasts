@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-05-10
+
 ### Added
 - Added static build report artifacts at `frontend/dist/docs/build-report.html` and `build-report.json` during `podcast-atlas build-static`.
 - Added a `BUILD REPORT` header link in the web app next to `CHANGELOG`.
