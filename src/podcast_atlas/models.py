@@ -134,10 +134,12 @@ class ClusterStatsRow(BaseModel):
     unique_podcast_count: int
     dominant_podcast_share: float
     median_pub_year: int | None = None
+    median_historical_year: int | None = None
     temporal_span_years: int | None = None
     mean_span_confidence: float | None = None
     geo_dispersion: float | None = None
     cohesion_proxy: float | None = None
+    distinctiveness_proxy: float | None = None
 
 
 class ClusterTermMetricRow(BaseModel):

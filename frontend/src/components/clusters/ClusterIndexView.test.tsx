@@ -53,16 +53,20 @@ function ds(): Dataset {
         episode_count: 30,
         unique_podcast_count: 1,
         dominant_podcast_share: 0.95,
+        median_historical_year: 1810,
         temporal_span_years: 22,
         cohesion_proxy: 0.2,
+        distinctiveness_proxy: 0.3,
       },
       {
         cluster_id: 2,
         episode_count: 10,
         unique_podcast_count: 3,
         dominant_podcast_share: 0.4,
+        median_historical_year: 1700,
         temporal_span_years: 280,
         cohesion_proxy: 0.8,
+        distinctiveness_proxy: 0.9,
       },
     ],
   }
@@ -86,5 +90,8 @@ describe("ClusterIndexView", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /open cluster #2/i }))
     expect(onSelect).toHaveBeenCalledWith(2)
+
+    expect(screen.getAllByText("distinctiveness").length).toBeGreaterThan(0)
+    expect(screen.getByLabelText(/cluster quality comparison/i)).toBeInTheDocument()
   })
 })

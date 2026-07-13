@@ -6,19 +6,62 @@ from podcast_atlas.export.cluster_metrics import compute_cluster_metrics
 def test_compute_cluster_metrics_returns_expected_sections() -> None:
     payload = {
         "episodes": [
-            {"id": 1, "podcast_id": 10, "pub_date_iso": "2020-01-01T00:00:00Z"},
-            {"id": 2, "podcast_id": 10, "pub_date_iso": "2021-01-01T00:00:00Z"},
-            {"id": 3, "podcast_id": 11, "pub_date_iso": "2022-01-01T00:00:00Z"},
+            {
+                "id": 1,
+                "podcast_id": 10,
+                "pub_date_iso": "2020-01-01T00:00:00Z",
+                "best_span_id": 10,
+                "best_place_id": 20,
+            },
+            {
+                "id": 2,
+                "podcast_id": 10,
+                "pub_date_iso": "2021-01-01T00:00:00Z",
+                "best_span_id": 11,
+                "best_place_id": 21,
+            },
+            {
+                "id": 3,
+                "podcast_id": 11,
+                "pub_date_iso": "2022-01-01T00:00:00Z",
+                "best_span_id": 12,
+                "best_place_id": 22,
+            },
         ],
         "spans": [
-            {"episode_id": 1, "start_iso": "1910-01-01", "end_iso": "1912-12-31", "score": 0.8},
-            {"episode_id": 2, "start_iso": "1920-01-01", "end_iso": "1921-12-31", "score": 0.9},
-            {"episode_id": 3, "start_iso": "1911-01-01", "end_iso": "1914-12-31", "score": 0.7},
+            {
+                "id": 10,
+                "episode_id": 1,
+                "start_iso": "1910-01-01",
+                "end_iso": "1912-12-31",
+                "score": 0.8,
+            },
+            {
+                "id": 13,
+                "episode_id": 1,
+                "start_iso": "2023-01-01",
+                "end_iso": "2023-12-31",
+                "score": 0.1,
+            },
+            {
+                "id": 11,
+                "episode_id": 2,
+                "start_iso": "1920-01-01",
+                "end_iso": "1921-12-31",
+                "score": 0.9,
+            },
+            {
+                "id": 12,
+                "episode_id": 3,
+                "start_iso": "1911-01-01",
+                "end_iso": "1914-12-31",
+                "score": 0.7,
+            },
         ],
         "places": [
-            {"episode_id": 1, "canonical_name": "Paris", "lat": 48.8, "lon": 2.3},
-            {"episode_id": 2, "canonical_name": "Berlin", "lat": 52.5, "lon": 13.4},
-            {"episode_id": 3, "canonical_name": "Paris", "lat": 48.8, "lon": 2.3},
+            {"id": 20, "episode_id": 1, "canonical_name": "Paris", "lat": 48.8, "lon": 2.3},
+            {"id": 21, "episode_id": 2, "canonical_name": "Berlin", "lat": 52.5, "lon": 13.4},
+            {"id": 22, "episode_id": 3, "canonical_name": "Paris", "lat": 48.8, "lon": 2.3},
         ],
         "entities": [
             {"episode_id": 1, "name": "Entity A", "kind": "person"},
@@ -57,3 +100,14 @@ def test_compute_cluster_metrics_returns_expected_sections() -> None:
     assert any(r["cluster_id"] == 100 for r in result["cluster_term_metrics"])
     assert any(r["cluster_id"] == 100 for r in result["cluster_timeline_histogram"])
     assert any(r["cluster_id"] == 100 for r in result["cluster_next_steps"])
+
+    cluster_100 = next(r for r in result["cluster_stats"] if r["cluster_id"] == 100)
+    assert cluster_100["median_historical_year"] == 1916
+    assert cluster_100["temporal_span_years"] == 9
+    assert cluster_100["cohesion_proxy"] > 0
+    assert cluster_100["distinctiveness_proxy"] > 0
+
+    histogram_100 = [
+        row for row in result["cluster_timeline_histogram"] if row["cluster_id"] == 100
+    ]
+    assert all(row["start_year"] < 2000 for row in histogram_100)

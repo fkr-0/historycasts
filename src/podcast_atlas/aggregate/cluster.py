@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from collections import Counter
 from dataclasses import dataclass
 
 
@@ -38,7 +39,10 @@ def k_for_n(n: int) -> int:
         return 0
     if n < 4:
         return 1
-    return min(16, max(2, int(round(math.sqrt(n)))))
+    # A plain sqrt(n) rule over-fragments the relatively small per-podcast
+    # datasets used here and regularly produces singleton clusters. Target a
+    # somewhat larger typical cluster while retaining a conservative cap.
+    return min(16, max(2, int(round(math.sqrt(n / 2.0)))))
 
 
 def kmeans(
@@ -107,3 +111,75 @@ def kmeans(
             )
         )
     return centroids_orig, assign
+
+
+def merge_small_clusters(
+    points: list[Point],
+    assignments: dict[int, int],
+    *,
+    min_size: int = 2,
+) -> tuple[list[tuple[float, float, float]], dict[int, int]]:
+    """Merge singleton/tiny clusters into the nearest stable cluster.
+
+    K-means can isolate a geographic or temporal outlier as a one-episode
+    cluster. Such clusters are visually prominent but analytically weak. This
+    pass keeps clusters with at least ``min_size`` members and reassigns smaller
+    groups using the same normalized feature space as k-means.
+    """
+    if not points or not assignments:
+        return [], {}
+
+    counts = Counter(assignments.values())
+    stable = sorted(cluster_id for cluster_id, count in counts.items() if count >= min_size)
+    if not stable:
+        # Deterministically retain the largest original group and absorb the rest.
+        stable = [min(counts, key=lambda cluster_id: (-counts[cluster_id], cluster_id))]
+
+    scaled_by_episode = dict(_scale(points))
+
+    def scaled_centroid(cluster_id: int) -> tuple[float, float, float]:
+        members = [
+            scaled_by_episode[point.episode_id]
+            for point in points
+            if assignments[point.episode_id] == cluster_id
+        ]
+        return (
+            sum(values[0] for values in members) / len(members),
+            sum(values[1] for values in members) / len(members),
+            sum(values[2] for values in members) / len(members),
+        )
+
+    stable_centroids = {cluster_id: scaled_centroid(cluster_id) for cluster_id in stable}
+
+    def distance(left: tuple[float, float, float], right: tuple[float, float, float]) -> float:
+        return sum((left[index] - right[index]) ** 2 for index in range(3))
+
+    reassigned = assignments.copy()
+    for point in points:
+        current = assignments[point.episode_id]
+        if current in stable:
+            continue
+        value = scaled_by_episode[point.episode_id]
+        reassigned[point.episode_id] = min(
+            stable,
+            key=lambda cluster_id: (distance(value, stable_centroids[cluster_id]), cluster_id),
+        )
+
+    active = sorted(set(reassigned.values()))
+    compact = {old_id: new_id for new_id, old_id in enumerate(active)}
+    compact_assignments = {
+        episode_id: compact[cluster_id] for episode_id, cluster_id in reassigned.items()
+    }
+
+    clusters: list[list[Point]] = [[] for _ in active]
+    for point in points:
+        clusters[compact_assignments[point.episode_id]].append(point)
+    centroids = [
+        (
+            sum(point.mid_year for point in members) / len(members),
+            sum(point.lat for point in members) / len(members),
+            sum(point.lon for point in members) / len(members),
+        )
+        for members in clusters
+    ]
+    return centroids, compact_assignments

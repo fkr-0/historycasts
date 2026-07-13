@@ -6,7 +6,7 @@ import sqlite3
 from typing import Optional
 
 from ..provenance import ORIGIN_DET, ORIGIN_NONDET, new_run
-from .cluster import Point, k_for_n, kmeans
+from .cluster import Point, k_for_n, kmeans, merge_small_clusters
 from .extract import (
     clean_description,
     extract_entities,
@@ -61,7 +61,6 @@ def _ensure_place_norm(conn: sqlite3.Connection, canonical: str, kind: str) -> i
         "INSERT INTO places_norm (norm_key, canonical_name, place_kind) VALUES (?, ?, ?)",
         (nk, canonical, kind),
     )
-    conn.commit()
     return _rowid(cur)
 
 
@@ -188,6 +187,197 @@ def _mid_year(start_iso: str, end_iso: str) -> Optional[float]:
         return None
 
 
+def _select_best_place_id(
+    candidates: list[tuple[int, int, str, str, int]],
+    *,
+    best_span_segment_id: int | None,
+) -> int | None:
+    """Choose the place supported by the strongest available narrative context.
+
+    Candidate tuples contain ``(place_id, segment_id, section, kind, order)``.
+    A place mentioned in the same segment as the selected historical span is
+    substantially preferable to an incidental place elsewhere in the notes.
+    """
+    if not candidates:
+        return None
+
+    section_weight = {"title": 4.0, "main": 3.0, "outline": 2.0, "caption": 0.0}
+    kind_weight = {"city": 0.4, "region": 0.3, "country": 0.15, "unknown": 0.0}
+
+    def score(row: tuple[int, int, str, str, int]) -> tuple[float, int]:
+        place_id, segment_id, section, kind, order = row
+        same_segment = 5.0 if best_span_segment_id == segment_id else 0.0
+        value = (
+            same_segment
+            + section_weight.get(section, 1.0)
+            + kind_weight.get(kind, 0.0)
+            - min(order, 50) * 0.01
+        )
+        # Negated id gives deterministic preference to the earlier insertion.
+        return value, -place_id
+
+    return max(candidates, key=score)[0]
+
+
+def _segment_index_column(conn: sqlite3.Connection) -> str:
+    columns = {str(row[1]) for row in conn.execute("PRAGMA table_info(segments)").fetchall()}
+    if "idx" in columns:
+        return "idx"
+    if "seg_idx" in columns:
+        return "seg_idx"
+    raise RuntimeError("segments table has neither idx nor seg_idx column")
+
+
+def _period_label(mid_year: float) -> str:
+    year = int(round(mid_year))
+    if year < 0:
+        century = ((abs(year) - 1) // 100) + 1
+        return f"{century}. Jh. v. Chr."
+    if year == 0:
+        return "Zeitenwende"
+    century = ((year - 1) // 100) + 1
+    return f"{century}. Jh."
+
+
+def _dominant_cluster_place(conn: sqlite3.Connection, episode_ids: list[int]) -> str | None:
+    if not episode_ids:
+        return None
+    placeholders = ",".join("?" for _ in episode_ids)
+    row = conn.execute(
+        f"""
+        WITH ranked AS (
+          SELECT
+            e.id AS episode_id,
+            COALESCE(NULLIF(pn.canonical_name, ''), NULLIF(p.name_raw, '')) AS place_name,
+            ROW_NUMBER() OVER (
+              PARTITION BY e.id
+              ORDER BY
+                CASE WHEN p.segment_id = ts.segment_id THEN 1 ELSE 0 END DESC,
+                COALESCE(p.locked, 0) DESC,
+                CASE COALESCE(p.origin, 'det') WHEN 'nondet' THEN 1 ELSE 0 END DESC,
+                CASE p.place_kind WHEN 'city' THEN 3 WHEN 'region' THEN 2 WHEN 'country' THEN 1 ELSE 0 END DESC,
+                COALESCE(p.run_id, 0) DESC,
+                p.id DESC
+            ) AS rn
+          FROM episodes e
+          JOIN time_spans ts ON ts.id=e.best_span_id
+          JOIN places p ON p.episode_id=e.id
+          LEFT JOIN places_norm pn ON pn.id=p.place_norm_id
+          WHERE e.id IN ({placeholders})
+            AND p.latitude IS NOT NULL
+            AND p.longitude IS NOT NULL
+        )
+        SELECT place_name, COUNT(*) AS support
+        FROM ranked
+        WHERE rn=1 AND place_name IS NOT NULL
+        GROUP BY place_name
+        ORDER BY support DESC, place_name ASC
+        LIMIT 1
+        """,
+        episode_ids,
+    ).fetchone()
+    return str(row["place_name"]) if row is not None else None
+
+
+def _extract_episode_derived(
+    conn: sqlite3.Connection,
+    *,
+    run_id: int,
+    episode_id: int,
+    title: str,
+    description_pure: str,
+    gaz,
+) -> tuple[int | None, int | None]:
+    """Insert deterministic segments and extracted rows for one episode."""
+    description_segments = segment_text(description_pure)
+    # The title is high-signal evidence (for example "Das Jahr 536") and
+    # participates in date/place extraction without polluting the keyword corpus.
+    segs = [("title", title.strip()), *description_segments]
+    best_span_id = None
+    best_span_score = -1.0
+    best_span_segment_id = None
+    place_candidates: list[tuple[int, int, str, str, int]] = []
+    place_order = 0
+    segment_index_column = _segment_index_column(conn)
+
+    for idx, (section, txt) in enumerate(segs):
+        if not txt:
+            continue
+        cur = conn.execute(
+            f"INSERT INTO segments (episode_id, section, {segment_index_column}, text) VALUES (?, ?, ?, ?)",
+            (episode_id, section, idx, txt),
+        )
+        seg_id = _rowid(cur)
+
+        for sp in extract_spans(txt, section):
+            cur2 = conn.execute(
+                """
+                INSERT INTO time_spans
+                (run_id, origin, locked, episode_id, segment_id, start_iso, end_iso, precision, qualifier, source_text, source_section, source_context, score, review_flag)
+                VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    run_id,
+                    ORIGIN_DET,
+                    episode_id,
+                    seg_id,
+                    sp.start.isoformat() if sp.start else None,
+                    sp.end.isoformat() if sp.end else None,
+                    sp.precision,
+                    sp.qualifier,
+                    sp.source_text,
+                    section,
+                    txt[:500],
+                    float(sp.score),
+                    sp.review_flag,
+                ),
+            )
+            sp_id = _rowid(cur2)
+            if sp.score > best_span_score:
+                best_span_score = sp.score
+                best_span_id = sp_id
+                best_span_segment_id = seg_id
+
+        for canon, kind, lat, lon, radius in extract_places(txt, gaz):
+            pnid = _ensure_place_norm(conn, canon, kind)
+            cur3 = conn.execute(
+                """
+                INSERT INTO places
+                (run_id, origin, locked, episode_id, segment_id, place_norm_id, name_raw, place_kind, latitude, longitude, radius_km)
+                VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (run_id, ORIGIN_DET, episode_id, seg_id, pnid, canon, kind, lat, lon, radius),
+            )
+            pl_id = _rowid(cur3)
+            place_candidates.append((pl_id, seg_id, section, kind, place_order))
+            place_order += 1
+
+        for name, kind, conf, src in extract_entities(txt):
+            conn.execute(
+                "INSERT INTO entities (run_id, origin, locked, episode_id, segment_id, name, kind, confidence, source_text) VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?)",
+                (run_id, ORIGIN_DET, episode_id, seg_id, name, kind, float(conf), src),
+            )
+
+        if section == "main":
+            for phrase, score in rake_phrases(txt, max_phrases=25):
+                row = conn.execute("SELECT id FROM keywords WHERE phrase=?", (phrase,)).fetchone()
+                if row:
+                    kid = int(row[0])
+                else:
+                    curk = conn.execute("INSERT INTO keywords (phrase) VALUES (?)", (phrase,))
+                    kid = _rowid(curk)
+                conn.execute(
+                    "INSERT OR REPLACE INTO episode_keywords (run_id, origin, locked, episode_id, keyword_id, score) VALUES (?, ?, 0, ?, ?, ?)",
+                    (run_id, ORIGIN_DET, episode_id, kid, float(score)),
+                )
+
+    best_place_id = _select_best_place_id(
+        place_candidates,
+        best_span_segment_id=best_span_segment_id,
+    )
+    return best_span_id, best_place_id
+
+
 def build_db(
     db_path: str,
     rss_paths: list[str],
@@ -228,97 +418,17 @@ def build_db(
 
             _insert_links(conn, eid, it.description_raw, it.page_url)
 
-            # segments + extraction
-            segs = segment_text(
-                conn.execute("SELECT description_pure FROM episodes WHERE id=?", (eid,)).fetchone()[
-                    0
-                ]
+            pure = conn.execute(
+                "SELECT description_pure FROM episodes WHERE id=?", (eid,)
+            ).fetchone()[0]
+            best_span_id, best_place_id = _extract_episode_derived(
+                conn,
+                run_id=run_id,
+                episode_id=eid,
+                title=it.title,
+                description_pure=pure,
+                gaz=gaz,
             )
-            best_span_id = None
-            best_span_score = -1.0
-            best_place_id = None
-
-            for idx, (section, txt) in enumerate(segs):
-                cur = conn.execute(
-                    "INSERT INTO segments (episode_id, section, idx, text) VALUES (?, ?, ?, ?)",
-                    (eid, section, idx, txt),
-                )
-                seg_id = _rowid(cur)
-
-                # spans
-                spans = extract_spans(txt, section)
-                for sp in spans:
-                    cur2 = conn.execute(
-                        """
-                        INSERT INTO time_spans
-                        (run_id, origin, locked, episode_id, segment_id, start_iso, end_iso, precision, qualifier, source_text, source_section, source_context, score, review_flag)
-                        VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        """,
-                        (
-                            run_id,
-                            ORIGIN_DET,
-                            eid,
-                            seg_id,
-                            sp.start.isoformat() if sp.start else None,
-                            sp.end.isoformat() if sp.end else None,
-                            sp.precision,
-                            sp.qualifier,
-                            sp.source_text,
-                            section,
-                            txt[:500],
-                            float(sp.score),
-                            sp.review_flag,
-                        ),
-                    )
-                    sp_id = _rowid(cur2)
-                    if sp.score > best_span_score:
-                        best_span_score = sp.score
-                        best_span_id = sp_id
-
-                # places
-                places = extract_places(txt, gaz)
-                for canon, kind, lat, lon, radius in places:
-                    pnid = _ensure_place_norm(conn, canon, kind)
-                    cur3 = conn.execute(
-                        """
-                        INSERT INTO places
-                        (run_id, origin, locked, episode_id, segment_id, place_norm_id, name_raw, place_kind, latitude, longitude, radius_km)
-                        VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?)
-                        """,
-                        (run_id, ORIGIN_DET, eid, seg_id, pnid, canon, kind, lat, lon, radius),
-                    )
-                    pl_id = _rowid(cur3)
-                    # choose first geocoded place as best
-                    if best_place_id is None:
-                        best_place_id = pl_id
-
-                # entities
-                for name, kind, conf, src in extract_entities(txt):
-                    conn.execute(
-                        "INSERT INTO entities (run_id, origin, locked, episode_id, segment_id, name, kind, confidence, source_text) VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?)",
-                        (run_id, ORIGIN_DET, eid, seg_id, name, kind, float(conf), src),
-                    )
-
-                # keywords only from main section
-                if section == "main":
-                    for phrase, score in rake_phrases(txt, max_phrases=25):
-                        # insert keyword
-                        row = conn.execute(
-                            "SELECT id FROM keywords WHERE phrase=?", (phrase,)
-                        ).fetchone()
-                        if row:
-                            kid = int(row[0])
-                        else:
-                            curk = conn.execute(
-                                "INSERT INTO keywords (phrase) VALUES (?)", (phrase,)
-                            )
-                            kid = _rowid(curk)
-                        conn.execute(
-                            "INSERT OR REPLACE INTO episode_keywords (run_id, origin, locked, episode_id, keyword_id, score) VALUES (?, ?, 0, ?, ?, ?)",
-                            (run_id, ORIGIN_DET, eid, kid, float(score)),
-                        )
-
-            # set best ids
             conn.execute(
                 "UPDATE episodes SET best_span_id=?, best_place_id=? WHERE id=?",
                 (best_span_id, best_place_id, eid),
@@ -352,13 +462,34 @@ def _recompute_clusters(conn: sqlite3.Connection, *, run_id: int) -> None:
         # build points for episodes with best span+place
         eps = conn.execute(
             """
-            SELECT e.id, ts.start_iso, ts.end_iso, p.latitude, p.longitude
-            FROM episodes e
-            JOIN time_spans ts ON ts.id = e.best_span_id
-            JOIN places p ON p.id = e.best_place_id
-            WHERE e.podcast_id = ?
-              AND ts.start_iso IS NOT NULL AND ts.end_iso IS NOT NULL
-              AND p.latitude IS NOT NULL AND p.longitude IS NOT NULL
+            WITH candidates AS (
+              SELECT
+                e.id,
+                e.podcast_id,
+                ts.start_iso,
+                ts.end_iso,
+                p.latitude,
+                p.longitude,
+                ROW_NUMBER() OVER (
+                  PARTITION BY e.id
+                  ORDER BY
+                    CASE WHEN p.segment_id = ts.segment_id THEN 1 ELSE 0 END DESC,
+                    COALESCE(p.locked, 0) DESC,
+                    CASE COALESCE(p.origin, 'det') WHEN 'nondet' THEN 1 ELSE 0 END DESC,
+                    CASE p.place_kind WHEN 'city' THEN 3 WHEN 'region' THEN 2 WHEN 'country' THEN 1 ELSE 0 END DESC,
+                    COALESCE(p.run_id, 0) DESC,
+                    p.id DESC
+                ) AS rn
+              FROM episodes e
+              JOIN time_spans ts ON ts.id = e.best_span_id
+              JOIN places p ON p.episode_id = e.id
+              WHERE e.podcast_id = ?
+                AND ts.start_iso IS NOT NULL AND ts.end_iso IS NOT NULL
+                AND p.latitude IS NOT NULL AND p.longitude IS NOT NULL
+            )
+            SELECT id, start_iso, end_iso, latitude, longitude
+            FROM candidates
+            WHERE rn=1
             """,
             (pid,),
         ).fetchall()
@@ -375,12 +506,23 @@ def _recompute_clusters(conn: sqlite3.Connection, *, run_id: int) -> None:
 
         k = k_for_n(len(points))
         centroids, assign = kmeans(points, k)
+        centroids, assign = merge_small_clusters(points, assign, min_size=2)
+        actual_k = len(centroids)
 
         cluster_ids: list[int] = []
         for j, (cy, clat, clon) in enumerate(centroids):
             cur = conn.execute(
                 "INSERT INTO clusters (run_id, origin, podcast_id, k, label, centroid_year, centroid_lat, centroid_lon) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                (run_id, ORIGIN_DET, pid, k, f"C{j + 1}", float(cy), float(clat), float(clon)),
+                (
+                    run_id,
+                    ORIGIN_DET,
+                    pid,
+                    actual_k,
+                    f"C{j + 1}",
+                    float(cy),
+                    float(clat),
+                    float(clon),
+                ),
             )
             cluster_ids.append(_rowid(cur))
 
@@ -402,6 +544,15 @@ def _recompute_clusters(conn: sqlite3.Connection, *, run_id: int) -> None:
             ]
             if not ep_ids:
                 continue
+
+            centroid_year = float(
+                conn.execute("SELECT centroid_year FROM clusters WHERE id=?", (cid,)).fetchone()[0]
+            )
+            place_label = _dominant_cluster_place(conn, ep_ids)
+            label = _period_label(centroid_year)
+            if place_label:
+                label = f"{label} · {place_label}"
+            conn.execute("UPDATE clusters SET label=? WHERE id=?", (label, cid))
 
             # keywords aggregate
             kw = conn.execute(
@@ -484,7 +635,7 @@ def apply_heuristic_review_overrides(conn: sqlite3.Connection, *, year_max: int)
         SELECT e.id AS episode_id
         FROM episodes e
         JOIN v_best_time_span b ON b.episode_id = e.id
-        WHERE b.review_flag IS NOT NULL
+        WHERE b.review_flag IN ('caption-folgenbild', 'caption-portrait-year')
         """
     ).fetchall()
 

@@ -51,6 +51,33 @@ def _jaccard(a: set[int], b: set[int]) -> float:
     return _safe_div(len(a & b), len(a | b))
 
 
+def _historical_mid_year(span: dict[str, Any] | None) -> int | None:
+    if not span:
+        return None
+    start = _year_from_iso(span.get("start_iso"))
+    end = _year_from_iso(span.get("end_iso"))
+    if start is None and end is None:
+        return None
+    if start is None:
+        return end
+    if end is None:
+        return start
+    return int(round((start + end) / 2.0))
+
+
+def _mean_pairwise_cosine(vectors: list[dict[str, float]]) -> float | None:
+    usable = [vector for vector in vectors if vector]
+    if not usable:
+        return None
+    if len(usable) == 1:
+        return 1.0
+    similarities: list[float] = []
+    for index, left in enumerate(usable):
+        for right in usable[index + 1 :]:
+            similarities.append(_cosine_similarity(left, right))
+    return _mean(similarities)
+
+
 def compute_cluster_metrics(payload: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
     episodes = payload.get("episodes", [])
     spans = payload.get("spans", [])
@@ -68,32 +95,40 @@ def compute_cluster_metrics(payload: dict[str, Any]) -> dict[str, list[dict[str,
         except Exception:
             continue
 
-    span_scores_by_ep: dict[int, list[float]] = defaultdict(list)
-    span_years_by_ep: dict[int, list[int]] = defaultdict(list)
+    spans_by_ep: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    span_by_id: dict[int, dict[str, Any]] = {}
     for s in spans:
         ep_id = int(s["episode_id"])
-        span_scores_by_ep[ep_id].append(float(s.get("score", 0.0)))
-        for key in ("start_iso", "end_iso"):
-            y = _year_from_iso(s.get(key))
-            if y is not None:
-                span_years_by_ep[ep_id].append(y)
+        spans_by_ep[ep_id].append(s)
+        if s.get("id") is not None:
+            span_by_id[int(s["id"])] = s
 
     places_by_ep: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    place_by_id: dict[int, dict[str, Any]] = {}
     for p in places:
         places_by_ep[int(p["episode_id"])].append(p)
+        if p.get("id") is not None:
+            place_by_id[int(p["id"])] = p
 
     entities_by_ep: dict[int, list[dict[str, Any]]] = defaultdict(list)
     for ent in entities:
         entities_by_ep[int(ent["episode_id"])].append(ent)
 
     global_term_support: Counter[str] = Counter()
-    for kws in episode_keywords.values():
+    episode_term_vectors: dict[int, dict[str, float]] = {}
+    for episode_id, kws in episode_keywords.items():
         seen: set[str] = set()
+        vector: dict[str, float] = {}
         for kw in kws:
             term = str(kw["phrase"])
+            vector[term] = max(vector.get(term, 0.0), float(kw.get("score", 0.0)))
             if term not in seen:
                 global_term_support[term] += 1
                 seen.add(term)
+        try:
+            episode_term_vectors[int(episode_id)] = vector
+        except (TypeError, ValueError):
+            continue
 
     cluster_stats: list[dict[str, Any]] = []
     cluster_term_metrics: list[dict[str, Any]] = []
@@ -103,6 +138,41 @@ def compute_cluster_metrics(payload: dict[str, Any]) -> dict[str, list[dict[str,
     cluster_next_steps: list[dict[str, Any]] = []
 
     total_episodes = max(1, len(episodes))
+    max_rarity = math.log(total_episodes + 1.0)
+
+    global_entity_counts: Counter[tuple[str, str]] = Counter(
+        (str(e.get("name", "")), str(e.get("kind", "unknown"))) for e in entities
+    )
+    global_place_counts: Counter[str] = Counter(str(p.get("canonical_name", "")) for p in places)
+
+    def best_span_for_episode(episode: dict[str, Any]) -> dict[str, Any] | None:
+        best_span_id = episode.get("best_span_id")
+        if best_span_id is not None:
+            selected = span_by_id.get(int(best_span_id))
+            if selected is not None:
+                return selected
+        candidates = spans_by_ep.get(int(episode["id"]), [])
+        return max(candidates, key=lambda row: float(row.get("score", 0.0)), default=None)
+
+    def best_place_for_episode(episode: dict[str, Any]) -> dict[str, Any] | None:
+        best_place_id = episode.get("best_place_id")
+        if best_place_id is not None:
+            selected = place_by_id.get(int(best_place_id))
+            if (
+                selected is not None
+                and selected.get("lat") is not None
+                and selected.get("lon") is not None
+            ):
+                return selected
+        candidates = places_by_ep.get(int(episode["id"]), [])
+        return next(
+            (
+                place
+                for place in candidates
+                if place.get("lat") is not None and place.get("lon") is not None
+            ),
+            candidates[0] if candidates else None,
+        )
 
     # Extract term vectors from cluster summaries when available.
     cluster_term_vectors: dict[int, dict[str, float]] = {}
@@ -123,23 +193,26 @@ def compute_cluster_metrics(payload: dict[str, Any]) -> dict[str, list[dict[str,
         )
         median_pub_year = int(median(years)) if years else None
 
-        span_scores: list[float] = []
-        mention_years: list[int] = []
+        best_spans = [best_span_for_episode(e) for e in member_eps]
+        historical_years = [
+            year for span in best_spans if (year := _historical_mid_year(span)) is not None
+        ]
+        span_scores = [float(span.get("score", 0.0)) for span in best_spans if span is not None]
+        best_places = [best_place_for_episode(e) for e in member_eps]
         cluster_places: list[dict[str, Any]] = []
         cluster_entities: list[dict[str, Any]] = []
         for eid in ep_ids:
-            span_scores.extend(span_scores_by_ep.get(eid, []))
-            mention_years.extend(span_years_by_ep.get(eid, []))
             cluster_places.extend(places_by_ep.get(eid, []))
             cluster_entities.extend(entities_by_ep.get(eid, []))
 
         temporal_span_years = None
-        if mention_years:
-            temporal_span_years = max(mention_years) - min(mention_years)
+        if historical_years:
+            temporal_span_years = max(historical_years) - min(historical_years)
         mean_span_confidence = _mean(span_scores)
+        median_historical_year = int(round(median(historical_years))) if historical_years else None
 
-        lats = [float(p["lat"]) for p in cluster_places if p.get("lat") is not None]
-        lons = [float(p["lon"]) for p in cluster_places if p.get("lon") is not None]
+        lats = [float(p["lat"]) for p in best_places if p and p.get("lat") is not None]
+        lons = [float(p["lon"]) for p in best_places if p and p.get("lon") is not None]
         geo_dispersion = None
         if lats and lons and len(lats) == len(lons):
             # Average of coordinate stddevs as a compact dispersion proxy.
@@ -148,10 +221,16 @@ def compute_cluster_metrics(payload: dict[str, Any]) -> dict[str, list[dict[str,
             geo_dispersion = (lat_sd + lon_sd) / 2.0
 
         term_vector = cluster_term_vectors.get(cid, {})
-        total_term_weight = sum(term_vector.values())
-        cohesion_proxy = None
-        if total_term_weight > 0:
-            cohesion_proxy = max(term_vector.values()) / total_term_weight
+        member_term_vectors = [episode_term_vectors.get(eid, {}) for eid in ep_ids]
+        cohesion_proxy = _mean_pairwise_cosine(member_term_vectors)
+        total_term_weight = sum(max(0.0, weight) for weight in term_vector.values())
+        distinctiveness_proxy = None
+        if total_term_weight > 0 and max_rarity > 0:
+            weighted_rarity = 0.0
+            for term, weight in term_vector.items():
+                rarity = math.log((total_episodes + 1.0) / (global_term_support.get(term, 0) + 1.0))
+                weighted_rarity += max(0.0, weight) * _safe_div(rarity, max_rarity)
+            distinctiveness_proxy = _safe_div(weighted_rarity, total_term_weight)
 
         cluster_stats.append(
             {
@@ -160,19 +239,23 @@ def compute_cluster_metrics(payload: dict[str, Any]) -> dict[str, list[dict[str,
                 "unique_podcast_count": len(podcast_counts),
                 "dominant_podcast_share": round(dominant_podcast_share, 6),
                 "median_pub_year": median_pub_year,
+                "median_historical_year": median_historical_year,
                 "temporal_span_years": temporal_span_years,
                 "mean_span_confidence": round(mean_span_confidence, 6)
                 if mean_span_confidence is not None
                 else None,
                 "geo_dispersion": round(geo_dispersion, 6) if geo_dispersion is not None else None,
                 "cohesion_proxy": round(cohesion_proxy, 6) if cohesion_proxy is not None else None,
+                "distinctiveness_proxy": round(distinctiveness_proxy, 6)
+                if distinctiveness_proxy is not None
+                else None,
             }
         )
 
         # Timeline histogram (10-year bins).
-        if mention_years:
+        if historical_years:
             bins: Counter[tuple[int, int]] = Counter()
-            for y in mention_years:
+            for y in historical_years:
                 start = (y // 10) * 10
                 bins[(start, start + 9)] += 1
             for (start, end), count in sorted(bins.items()):
@@ -205,9 +288,6 @@ def compute_cluster_metrics(payload: dict[str, Any]) -> dict[str, list[dict[str,
             )
 
         # Entity and place stats.
-        global_entity_counts: Counter[tuple[str, str]] = Counter(
-            (str(e.get("name", "")), str(e.get("kind", "unknown"))) for e in entities
-        )
         cluster_entity_counts: Counter[tuple[str, str]] = Counter(
             (str(e.get("name", "")), str(e.get("kind", "unknown"))) for e in cluster_entities
         )
@@ -227,9 +307,6 @@ def compute_cluster_metrics(payload: dict[str, Any]) -> dict[str, list[dict[str,
                 }
             )
 
-        global_place_counts: Counter[str] = Counter(
-            str(p.get("canonical_name", "")) for p in places
-        )
         cluster_place_counts: Counter[str] = Counter(
             str(p.get("canonical_name", "")) for p in cluster_places
         )

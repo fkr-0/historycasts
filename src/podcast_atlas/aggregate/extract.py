@@ -32,6 +32,101 @@ _LINE_NOISE_MARKERS = [
     "nachbarinnen und nachbarn",
 ]
 
+_TERMINAL_SECTION_HEADINGS = {
+    "aus unserer werbung",
+    "besprochene folgen",
+    "bildnachweis",
+    "credits",
+    "episodenbild",
+    "erwähnte episoden",
+    "erwähnte folgen",
+    "erwähnte literatur",
+    "folgenbild",
+    "im buch erwähnte folgen",
+    "links",
+    "literatur",
+    "mitwirkende",
+    "museen & ausstellungen",
+    "musik",
+    "podcasts des monats",
+    "quellen",
+    "quellen & links",
+    "shownotes",
+    "team",
+    "tools",
+    "weiterführende links",
+    "werbung",
+}
+
+_CREDIT_LINE_RE = re.compile(
+    r"^(?:"
+    r"autor(?:in)?(?:\s+und\s+producer(?:in)?)?|"
+    r"host(?:in)?|moderation|online-veröffentlichung|producer(?:in)?|produktion|"
+    r"redaktion|regie|recherche|schnitt|sounddesign|sprecher(?:in)?|"
+    r"technische\s+distribution"
+    r")\s*:\s*\S+",
+    re.IGNORECASE,
+)
+
+_TRAILING_BROADCASTER_RE = re.compile(
+    r"\s*\((?:dlf\s*nova|dradio\s+wissen|deutschlandradio\s+wissen)\)\s*$",
+    re.IGNORECASE,
+)
+
+_INLINE_METADATA_RE = re.compile(
+    r"(?:"
+    r"\bdie\s+passende\s+ausgabe\s+[„“”‚‘’\"']?eine\s+stunde\s+history[„“”‚‘’\"']?\s+läuft\s+am|"
+    r"\bursprünglich\s+wurden\s+die\s+sendungen\s+bei\s+deutschlandradio\s+wissen\b|"
+    r"\*?affiliate-link\s*:|"
+    r"\b(?:hörenswert|lesenswert|sehenswert|wissenswert)\s*:"
+    r")",
+    re.IGNORECASE,
+)
+
+_INLINE_CREDIT_SENTENCE_RE = re.compile(
+    r"(?:^|(?<=\s))matthias\s+von\s+hellfeld\s+erzählt\.\s*",
+    re.IGNORECASE,
+)
+
+_BOILERPLATE_SENTENCE_RE = re.compile(
+    r"(?:^|(?<=[.!?])\s+)"
+    r"(?:"
+    r"wir\s+freuen\s+uns(?:\s+auch)?(?:\s+immer)?,?\s+wenn\s+ihr\s+(?:den\s+podcast|euren\s+freundinnen)|"
+    r"(?:abonniert|bewertet|rezensiert)\s+(?:uns|den\s+podcast)|"
+    r"folgt\s+uns\s+(?:auf|bei)\s+(?:instagram|facebook|tiktok)|"
+    r"mehr\s+informationen\s+(?:findet|gibt)\s+ihr\s+(?:auf|unter)|"
+    r"hosted\s+on\s+acast(?:\.|\s+see\s+acast\.com/privacy\s+for\s+more\s+information\.?)?"
+    r")"
+    r".*?(?=(?:[.!?](?:\s+|$))|$)",
+    re.IGNORECASE,
+)
+
+
+def _remove_inline_boilerplate(text: str) -> str:
+    """Remove promotional sentences when feeds flatten them into narrative text."""
+    previous = None
+    while text != previous:
+        previous = text
+        text = _BOILERPLATE_SENTENCE_RE.sub("", text)
+    return re.sub(r"[ \t]{2,}", " ", text).strip()
+
+
+def _heading_key(line: str) -> str:
+    """Normalize a standalone Markdown/feed section heading for matching."""
+    key = " ".join(line.strip().split())
+    key = re.sub(r"^[\s#/|>*_~+\-=–—]+", "", key)
+    key = re.sub(r"[\s:>*_~+\-=–—]+$", "", key)
+    return key.casefold()
+
+
+def _is_terminal_section_heading(line: str) -> bool:
+    key = _heading_key(line)
+    return bool(key) and key in _TERMINAL_SECTION_HEADINGS
+
+
+def _is_credit_line(line: str) -> bool:
+    return bool(_CREDIT_LINE_RE.match(" ".join(line.strip().split())))
+
 
 def _is_noise_line(line: str) -> bool:
     s = line.strip().casefold()
@@ -43,16 +138,37 @@ def _is_noise_line(line: str) -> bool:
 
 
 def clean_description(raw: str) -> str:
-    """Remove ad/footer boilerplate and convert HTML to text."""
+    """Return narrative description text without metadata/footer sections.
+
+    Podcast feeds commonly append bibliography publication years, cross-links,
+    image credits, advertising, and production credits. Those sections are not
+    episode subject matter and must not feed date/place extraction or clustering.
+    """
     txt = html_to_text(raw)
     # drop everything after repeated ad separator blocks
     for sep in AD_SEPARATORS:
         if sep in txt:
             txt = txt.split(sep, 1)[0]
+    # Some feeds append schedule, cross-promotion, and affiliate metadata in
+    # the same HTML paragraph as the narrative. Truncate at the first explicit
+    # marker so publication dates and linked-episode topics cannot leak into
+    # extraction or clustering.
+    metadata_match = _INLINE_METADATA_RE.search(txt)
+    if metadata_match:
+        txt = txt[: metadata_match.start()]
+    txt = _INLINE_CREDIT_SENTENCE_RE.sub("", txt)
+    txt = _remove_inline_boilerplate(txt)
+    txt = _TRAILING_BROADCASTER_RE.sub("", txt)
     lines = []
     for line in txt.splitlines():
         s = line.strip()
+        # Footer sections in the supported feeds are terminal: once one starts,
+        # everything after it is metadata rather than episode narrative.
+        if _is_terminal_section_heading(s):
+            break
         if _is_noise_line(s):
+            continue
+        if _is_credit_line(s):
             continue
         lines.append(s)
     return "\n".join(lines).strip()
@@ -109,7 +225,14 @@ def segment_text(pure: str) -> list[tuple[str, str]]:
         b = block.strip()
         if not b:
             continue
+        if _is_terminal_section_heading(b):
+            break
         if _is_noise_segment(b):
+            continue
+        lines = [line.strip() for line in b.splitlines() if line.strip()]
+        lines = [line for line in lines if not _is_credit_line(line)]
+        b = "\n".join(lines).strip()
+        if not b:
             continue
         section = "main"
         if b.lower().startswith("das erwartet") or b.lower().startswith("ihr hört"):
@@ -136,9 +259,11 @@ class Span:
 
 _DATE_DMY = re.compile(r"\b(\d{1,2})\.(\d{1,2})\.(\d{4})\b")
 _DATE_DMY_TIME = re.compile(r"\b(\d{1,2})\.(\d{1,2})\.(\d{4})\s+(\d{1,2}):(\d{2})\b")
-_YEAR = re.compile(r"\b(1\d{3}|20\d{2})\b")
+# Three- and four-digit CE years. The word boundaries intentionally avoid
+# matching feed identifiers such as ``GAG544`` where the digits touch letters.
+_YEAR = re.compile(r"\b([1-9]\d{2,3})\b")
 _YEAR_RANGE = re.compile(r"\b(\d{3,4})\s*[–-]\s*(\d{2,4})\b")
-_CENTURY = re.compile(r"\b(\d{1,2})\.\s*Jahrhundert\b", re.IGNORECASE)
+_CENTURY = re.compile(r"\b(\d{1,2})\.\s*Jahrhundert(?:s)?\b", re.IGNORECASE)
 
 # lexical cues
 _CUE_STRONG = ["im jahr", "im jahre", "während", "zur zeit", "zu dieser zeit"]
@@ -188,7 +313,11 @@ def extract_spans(segment: str, section: str) -> list[Span]:
 
     section_weight = 1.0
     review_flag = None
-    if section == "caption":
+    if section == "title":
+        # Titles are compact editorial summaries and usually carry less
+        # incidental chronology than show notes.
+        section_weight *= 1.35
+    elif section == "caption":
         section_weight *= 0.18
         if "folgenbild" in low and "zeigt" in low:
             section_weight *= 0.35

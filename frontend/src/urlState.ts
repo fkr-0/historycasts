@@ -7,7 +7,7 @@ export type Filters = {
   clusterTerm?: string
   clusterYearMin?: number
   clusterYearMax?: number
-  clusterSort?: "size" | "cohesion" | "novelty" | "spread"
+  clusterSort?: "size" | "cohesion" | "distinctiveness" | "spread"
   topN: number
   year?: number
   yearMin?: number
@@ -30,7 +30,14 @@ const parseKind = (value: string | null): Filters["kind"] => {
 }
 
 const parseClusterSort = (value: string | null): Filters["clusterSort"] => {
-  if (value === "size" || value === "cohesion" || value === "novelty" || value === "spread") {
+  // Preserve old shared URLs while exposing the corrected metric name.
+  if (value === "novelty") return "distinctiveness"
+  if (
+    value === "size" ||
+    value === "cohesion" ||
+    value === "distinctiveness" ||
+    value === "spread"
+  ) {
     return value
   }
   return "size"

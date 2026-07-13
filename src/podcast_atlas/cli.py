@@ -6,6 +6,8 @@ from pathlib import Path
 
 import uvicorn
 
+from .aggregate.db_build import DEFAULT_YEAR_MAX
+from .aggregate.reprocess import audit_derived_cleanup, reprocess_derived_data
 from .aggregate.wiki_enrich import enrich_with_wikidata
 from .api import create_app
 from .curation import delete_episode_spans
@@ -182,6 +184,38 @@ def build_parser() -> argparse.ArgumentParser:
         help="Resolve and report without writing DB updates",
     )
 
+    p_reprocess = sub.add_parser(
+        "reprocess-derived",
+        help="Re-clean stored descriptions and regenerate deterministic extraction/clusters",
+    )
+    p_reprocess.add_argument("--db", required=True, help="Path to SQLite DB")
+    p_reprocess.add_argument(
+        "--gazetteer",
+        default="data/gazetteer.csv",
+        help="Offline gazetteer CSV used for place extraction",
+    )
+    p_reprocess.add_argument(
+        "--year-max",
+        type=int,
+        default=DEFAULT_YEAR_MAX,
+        help="Maximum allowed extracted CE year",
+    )
+    p_reprocess.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Only audit description and generated-override changes",
+    )
+    p_reprocess.add_argument(
+        "--no-backup",
+        action="store_true",
+        help="Do not create a timestamped SQLite backup before writing",
+    )
+    p_reprocess.add_argument(
+        "--disable-heuristic-review",
+        action="store_true",
+        help="Do not generate caption-warning review overrides",
+    )
+
     return p
 
 
@@ -194,6 +228,21 @@ def cmd_ingest(ns: argparse.Namespace) -> int:
         feed_url=ns.feed_url,
         overrides_path=Path(ns.overrides) if ns.overrides else None,
     )
+    return 0
+
+
+def cmd_reprocess_derived(ns: argparse.Namespace) -> int:
+    if ns.dry_run:
+        stats = audit_derived_cleanup(Path(ns.db))
+    else:
+        stats = reprocess_derived_data(
+            Path(ns.db),
+            Path(ns.gazetteer),
+            year_max=int(ns.year_max),
+            enable_heuristic_review=not bool(ns.disable_heuristic_review),
+            backup=not bool(ns.no_backup),
+        )
+    print(f"reprocess-derived: {json.dumps(stats, ensure_ascii=False, sort_keys=True)}")
     return 0
 
 
@@ -406,6 +455,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_merge_handcrafted(ns)
     if ns.cmd == "geocode-places":
         return cmd_geocode_places(ns)
+    if ns.cmd == "reprocess-derived":
+        return cmd_reprocess_derived(ns)
 
     raise SystemExit(2)
 

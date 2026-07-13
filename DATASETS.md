@@ -7,8 +7,10 @@
 - Versioning policy (phase 1): commit `active.db` to git.
 - Typical lifecycle:
   1. copy/import your chosen full DB to `active.db`
-  2. run enrichment/build/export commands against `active.db`
-  3. let CI derive `static_site/dataset.json` and `pages/` artifacts from `active.db`
+  2. after extraction-rule changes, audit and run `podcast-atlas reprocess-derived`
+     against `active.db` (the write pass creates a backup by default)
+  3. run enrichment/build/export commands against `active.db`
+  4. let CI derive `static_site/dataset.json` and `pages/` artifacts from `active.db`
 
 ## Input/Curation Data (`data/`)
 

@@ -92,10 +92,12 @@ export interface Dataset {
     unique_podcast_count: number
     dominant_podcast_share: number
     median_pub_year?: number
+    median_historical_year?: number
     temporal_span_years?: number
     mean_span_confidence?: number
     geo_dispersion?: number
     cohesion_proxy?: number
+    distinctiveness_proxy?: number
   }[]
   cluster_term_metrics?: {
     cluster_id: number

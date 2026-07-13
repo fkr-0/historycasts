@@ -2,16 +2,18 @@ import { useMemo } from "react"
 import type { Dataset } from "../../types"
 import { colorForCluster } from "../../visual/clusterVisuals"
 import ClusterLegend from "../ClusterLegend"
+import ClusterQualityScatter from "./ClusterQualityScatter"
 
-export type ClusterSort = "size" | "cohesion" | "novelty" | "spread"
+export type ClusterSort = "size" | "cohesion" | "distinctiveness" | "spread"
 
 interface ClusterMetricRow {
   id: number
   label: string
   nMembers: number
   cohesion: number
-  novelty: number
+  distinctiveness: number
   spread: number
+  historicalYear?: number
   topTerms: string[]
 }
 
@@ -30,8 +32,9 @@ export default function ClusterIndexView(props: {
         label: c.cluster.label?.trim() || `Cluster ${c.cluster.id}`,
         nMembers: c.cluster.n_members,
         cohesion: s?.cohesion_proxy ?? 0,
-        novelty: s ? 1 - (s.dominant_podcast_share ?? 1) : 0,
+        distinctiveness: s?.distinctiveness_proxy ?? 0,
         spread: s?.temporal_span_years ?? 0,
+        historicalYear: s?.median_historical_year ?? c.cluster.centroid_mid_year,
         topTerms: c.top_keywords.slice(0, 5).map(t => t.phrase),
       }
     })
@@ -43,11 +46,10 @@ export default function ClusterIndexView(props: {
       switch (props.sortBy) {
         case "cohesion":
           return b.cohesion - a.cohesion || b.nMembers - a.nMembers
-        case "novelty":
-          return b.novelty - a.novelty || b.cohesion - a.cohesion
+        case "distinctiveness":
+          return b.distinctiveness - a.distinctiveness || b.cohesion - a.cohesion
         case "spread":
           return b.spread - a.spread || b.nMembers - a.nMembers
-        case "size":
         default:
           return b.nMembers - a.nMembers || b.cohesion - a.cohesion
       }
@@ -70,10 +72,14 @@ export default function ClusterIndexView(props: {
             >
               <option value="size">size</option>
               <option value="cohesion">cohesion</option>
-              <option value="novelty">novelty</option>
+              <option value="distinctiveness">distinctiveness</option>
               <option value="spread">spread</option>
             </select>
           </label>
+        </div>
+
+        <div className="mb-3">
+          <ClusterQualityScatter points={rows} onSelectCluster={props.onSelectCluster} />
         </div>
 
         <div className="mb-3">
@@ -109,20 +115,45 @@ export default function ClusterIndexView(props: {
                   open
                 </button>
               </div>
-              <div className="mt-2 grid grid-cols-3 gap-1 text-xs">
+              <div className="mt-2 grid grid-cols-2 gap-1 text-xs xl:grid-cols-4">
                 <div className="rounded border border-[color:var(--border)]/70 p-1">
                   <div className="text-[color:var(--muted)]">cohesion</div>
                   <div className="font-semibold">{row.cohesion.toFixed(2)}</div>
                 </div>
                 <div className="rounded border border-[color:var(--border)]/70 p-1">
-                  <div className="text-[color:var(--muted)]">novelty</div>
-                  <div className="font-semibold">{row.novelty.toFixed(2)}</div>
+                  <div className="text-[color:var(--muted)]">distinctiveness</div>
+                  <div className="font-semibold">{row.distinctiveness.toFixed(2)}</div>
                 </div>
                 <div className="rounded border border-[color:var(--border)]/70 p-1">
                   <div className="text-[color:var(--muted)]">spread</div>
                   <div className="font-semibold">{row.spread.toFixed(0)}</div>
                 </div>
+                <div className="rounded border border-[color:var(--border)]/70 p-1">
+                  <div className="text-[color:var(--muted)]">historical center</div>
+                  <div className="font-semibold">
+                    {row.historicalYear == null ? "—" : Math.round(row.historicalYear)}
+                  </div>
+                </div>
               </div>
+              {(row.nMembers < 3 || row.cohesion < 0.12 || row.spread > 500) && (
+                <div className="mt-2 flex flex-wrap gap-1 text-[11px]">
+                  {row.nMembers < 3 && (
+                    <span className="rounded border border-[color:var(--border)] px-1.5 py-0.5">
+                      tiny cluster
+                    </span>
+                  )}
+                  {row.cohesion < 0.12 && (
+                    <span className="rounded border border-[color:var(--border)] px-1.5 py-0.5">
+                      low semantic cohesion
+                    </span>
+                  )}
+                  {row.spread > 500 && (
+                    <span className="rounded border border-[color:var(--border)] px-1.5 py-0.5">
+                      very broad period
+                    </span>
+                  )}
+                </div>
+              )}
               <div className="mt-2 text-xs text-[color:var(--muted)]">
                 {row.topTerms.join(" · ") || "(no terms)"}
               </div>

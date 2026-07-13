@@ -47,6 +47,31 @@ This creates/updates `concepts`, `episode_concepts`, and `concept_claims` tables
 uv run podcast-atlas build-static --db active.db --dataset-out static_site/dataset.json --web-dir frontend
 ```
 
+## Re-clean and regenerate derived data
+
+When cleaner, date/place extraction, or clustering rules change, audit the
+stored raw descriptions before regenerating deterministic rows:
+
+```bash
+uv run podcast-atlas reprocess-derived \
+  --db active.db \
+  --gazetteer data/gazetteer.csv \
+  --dry-run
+```
+
+Apply the migration with the same command minus `--dry-run`:
+
+```bash
+uv run podcast-atlas reprocess-derived \
+  --db active.db \
+  --gazetteer data/gazetteer.csv
+```
+
+The write pass creates a timestamped SQLite backup by default, preserves
+locked/handcrafted provenance rows, replaces regenerable deterministic rows,
+removes machine-generated review overrides, and rebuilds clusters. Use
+`--no-backup` only for disposable databases.
+
 Run server and trigger static build in the same flow:
 ```bash
 uv run podcast-atlas serve --db active.db --build-static --dataset-out static_site/dataset.json --web-dir frontend
