@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest"
 import type { Dataset } from "../types"
-import { buildDensitySeries, buildEpisodeRasterRows } from "./episodeRaster"
+import {
+  buildBinnedDensitySeries,
+  buildDensitySeries,
+  buildEpisodeRasterRows,
+} from "./episodeRaster"
 
 function makeDataset(): Dataset {
   return {
@@ -65,5 +69,16 @@ describe("episodeRaster", () => {
     expect(y1804?.count).toBe(1)
     expect(y1805?.count).toBe(2)
     expect(y1812?.count).toBe(1)
+  })
+
+  it("bins long ranges while preserving overlap semantics", () => {
+    const ds = makeDataset()
+    const rows = buildEpisodeRasterRows(ds, ds.episodes)
+    const bins = buildBinnedDensitySeries(rows, 1800, 1815, 4)
+
+    expect(bins.length).toBeLessThanOrEqual(4)
+    expect(bins.some(bin => bin.startYear <= 1805 && bin.endYear >= 1805 && bin.count === 2)).toBe(
+      true
+    )
   })
 })

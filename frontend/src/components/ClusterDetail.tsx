@@ -66,6 +66,7 @@ export default function ClusterDetail(props: {
   const [entitySort, setEntitySort] = useState<"lift" | "count">("lift")
   const [placeSort, setPlaceSort] = useState<"lift" | "count">("lift")
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: cluster identity must reset local scope even when the derived bounds happen to be equal.
   useEffect(() => {
     if (props.initialYearRange) setYearRange(props.initialYearRange)
     else setYearRange(yearBounds)

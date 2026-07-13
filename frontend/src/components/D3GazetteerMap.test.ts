@@ -8,7 +8,7 @@ vi.mock("plotly.js-dist-min", () => ({
   },
 }))
 
-import { buildGazetteerMapData } from "./D3GazetteerMap"
+import { aggregateGazetteerMapPoints, buildGazetteerMapData } from "./D3GazetteerMap"
 
 function makeDataset(): Dataset {
   return {
@@ -83,5 +83,22 @@ describe("buildGazetteerMapData", () => {
     expect(result.points).toHaveLength(1)
     expect(result.points[0]?.place).toBe("Berlin")
     expect(result.points[0]?.episodeId).toBe(1)
+  })
+
+  it("aggregates overlapping episode points into place-density markers", () => {
+    const dataset = makeDataset()
+    dataset.places[2] = {
+      ...dataset.places[2],
+      canonical_name: "Berlin",
+      lat: 52.52,
+      lon: 13.4,
+    }
+
+    const result = buildGazetteerMapData(dataset, dataset.episodes)
+    const aggregated = aggregateGazetteerMapPoints(result.points)
+
+    expect(aggregated).toHaveLength(1)
+    expect(aggregated[0]).toMatchObject({ place: "Berlin", count: 2 })
+    expect(aggregated[0]?.episodeIds).toEqual([1, 2])
   })
 })

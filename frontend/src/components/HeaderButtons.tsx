@@ -1,6 +1,3 @@
-// components/HeaderButtons.tsx
-import React from "react"
-
 interface Props {
   leftCollapsed: boolean
   setLeftCollapsed: (v: boolean) => void

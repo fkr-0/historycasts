@@ -11,6 +11,21 @@ vi.mock("./components/Timeline", () => ({
   default: () => <div data-testid="timeline-mock" />,
 }))
 
+vi.mock("./components/EpisodeRasterTimeline", () => ({
+  default: (props: {
+    episodes: Dataset["episodes"]
+    onSelectEpisode: (episodeId: number) => void
+  }) => (
+    <div data-testid="episode-raster-mock">
+      {props.episodes.map(episode => (
+        <button key={episode.id} type="button" onClick={() => props.onSelectEpisode(episode.id)}>
+          Open {episode.title}
+        </button>
+      ))}
+    </div>
+  ),
+}))
+
 function createDataset(): Dataset {
   return {
     meta: {
@@ -122,8 +137,8 @@ describe("App integration", () => {
   it("filters episodes and opens detail after timeline click", async () => {
     render(<App />)
 
-    await screen.findByText("Matching episodes:")
-    expect(screen.getByText("2")).toBeInTheDocument()
+    const matchingEpisodes = await screen.findByText("Matching episodes:")
+    expect(matchingEpisodes).toHaveTextContent("Matching episodes: 2")
 
     const search = screen.getByLabelText(/Search title/i)
     fireEvent.change(search, { target: { value: "Alpha" } })
@@ -132,16 +147,7 @@ describe("App integration", () => {
       expect(screen.getByText(/Matching episodes:/).textContent).toContain("1")
     })
 
-    await waitFor(() => {
-      const rects = document.querySelectorAll("rect.span-rect")
-      expect(rects.length).toBeGreaterThan(0)
-    })
-
-    const firstRect = document.querySelector("rect.span-rect")
-    expect(firstRect).toBeTruthy()
-    if (firstRect) {
-      fireEvent.click(firstRect)
-    }
+    fireEvent.click(screen.getByRole("button", { name: /Open Episode Alpha/i }))
 
     await screen.findByRole("button", { name: /^Episode Alpha$/i })
     expect(screen.getAllByText(/alpha span/i).length).toBeGreaterThan(0)

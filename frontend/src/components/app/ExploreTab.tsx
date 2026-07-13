@@ -1,6 +1,7 @@
 import type { Dataset } from "../../types"
 import D3GazetteerMap from "../D3GazetteerMap"
 import EpisodeRasterTimeline from "../EpisodeRasterTimeline"
+import ExplorationOverview from "../explore/ExplorationOverview"
 import GraphIntervalSlider from "../GraphIntervalSlider"
 
 export default function ExploreTab(props: {
@@ -22,14 +23,22 @@ export default function ExploreTab(props: {
   onChangeActiveYearRange: (next: [number, number]) => void
 }) {
   return (
-    <div className="flex h-full min-h-[1200px] flex-col gap-3">
-      <div className="min-h-[240px] flex-[0_0_40%] overflow-hidden rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)]/60 p-2 pr-4 md:min-h-[280px]">
+    <div className="flex h-full min-h-[1600px] flex-col gap-3">
+      <ExplorationOverview
+        dataset={props.dataset}
+        episodes={props.episodes}
+        activeYearRange={props.activeYearRange}
+        onSelectYearRange={props.onChangeActiveYearRange}
+      />
+
+      <div className="min-h-[300px] flex-[0_0_34%] overflow-hidden rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)]/60 p-2 pr-4 md:min-h-[360px]">
         <EpisodeRasterTimeline
           dataset={props.dataset}
           episodes={props.episodes}
           selectedEpisodeId={props.selectedEpisodeId}
           onSelectEpisode={props.onSelectEpisode}
           visibleYearRange={props.activeYearRange}
+          onSelectYearRange={props.onChangeActiveYearRange}
         />
       </div>
 

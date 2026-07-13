@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react"
-import { Group, Panel, Separator, type ImperativePanelHandle } from "react-resizable-panels"
+import { Group, type ImperativePanelHandle, Panel, Separator } from "react-resizable-panels"
 
 export default function AppFrame(props: {
   left: React.ReactNode

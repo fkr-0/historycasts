@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { useDataset } from "./app/useDataset"
 import { useSearch } from "./app/useSearch"
 import { useUrlFilters } from "./app/useUrlFilters"
@@ -91,6 +91,30 @@ export default function App(): JSX.Element {
     setTabs(prev => closeTab(prev, tabId))
     setActiveTabId(active => nextActiveTabAfterClose(active, tabId))
   }
+
+  const handleClusterScopeChange = useCallback(
+    (scope: { term: string; yearRange: [number, number] }) => {
+      setFilters(current => {
+        const nextTerm = scope.term
+        const nextMin = scope.yearRange[0]
+        const nextMax = scope.yearRange[1]
+        if (
+          current.clusterTerm === nextTerm &&
+          current.clusterYearMin === nextMin &&
+          current.clusterYearMax === nextMax
+        ) {
+          return current
+        }
+        return {
+          ...current,
+          clusterTerm: nextTerm,
+          clusterYearMin: nextMin,
+          clusterYearMax: nextMax,
+        }
+      })
+    },
+    [setFilters]
+  )
 
   const activeTab = tabs.find(t => t.id === activeTabId) ?? tabs[0]
 
@@ -197,14 +221,7 @@ export default function App(): JSX.Element {
                           ? [filters.clusterYearMin, filters.clusterYearMax]
                           : undefined
                       }
-                      onScopeChange={scope =>
-                        setFilters(f => ({
-                          ...f,
-                          clusterTerm: scope.term,
-                          clusterYearMin: scope.yearRange?.[0],
-                          clusterYearMax: scope.yearRange?.[1],
-                        }))
-                      }
+                      onScopeChange={handleClusterScopeChange}
                     />
                   ) : null}
                 </>
