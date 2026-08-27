@@ -76,16 +76,23 @@ VALID_PLACE_KINDS: set[Literal["city", "region", "country", "river", "unknown"]]
 }
 
 
+def _source_db_sha256(db_path: Path | str) -> str:
+    p = Path(db_path)
+    if not p.exists():
+        return "missing-db"
+    h = hashlib.sha256()
+    with p.open("rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
 def _dataset_revision(db_path: Path | str) -> str:
     p = Path(db_path)
     if not p.exists():
         return "missing-db"
     st = p.stat()
-    h = hashlib.sha256()
-    with p.open("rb") as f:
-        for chunk in iter(lambda: f.read(1024 * 1024), b""):
-            h.update(chunk)
-    return f"sha256:{h.hexdigest()}:{int(st.st_mtime)}:{st.st_size}"
+    return f"sha256:{_source_db_sha256(p)}:{int(st.st_mtime)}:{st.st_size}"
 
 
 def _fingerprint(row: dict[str, Any], keys: tuple[str, ...]) -> str:
@@ -151,6 +158,7 @@ def export_dataset(db_path: Path | str) -> Dict[str, Any]:
     meta = ExportMeta(
         generated_at_iso=datetime.now(timezone.utc).isoformat(),
         source_db=os.path.abspath(str(db_path)),
+        source_db_sha256=_source_db_sha256(db_path),
         dataset_revision=_dataset_revision(db_path),
         wiki_enriched=wiki_enriched,
         wikidata_enriched=wikidata_enriched,
@@ -453,6 +461,19 @@ def export_dataset(db_path: Path | str) -> Dict[str, Any]:
         "episode_keywords": episode_keywords,
         "episode_clusters": episode_clusters,
         "clusters": clusters,
+    }
+    mapped_episode_ids = {
+        int(place["episode_id"])
+        for place in places
+        if place.get("lat") is not None and place.get("lon") is not None
+    }
+    episode_total = len(episodes)
+    meta["coverage"] = {
+        "episodes_total": episode_total,
+        "episodes_dated": sum(bool(episode.get("pub_date_iso")) for episode in episodes),
+        "episodes_mapped": len(mapped_episode_ids),
+        "episodes_unmapped": max(0, episode_total - len(mapped_episode_ids)),
+        "episodes_clustered": len(episode_clusters),
     }
 
     if "v_best_time_span" in views:

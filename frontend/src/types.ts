@@ -1,4 +1,4 @@
-export type PlaceKind = "city" | "region" | "country" | "unknown"
+export type PlaceKind = "city" | "region" | "country" | "river" | "unknown"
 export type EntityKind = "person" | "org" | "event" | "place" | "unknown"
 
 export interface Dataset {
@@ -6,7 +6,15 @@ export interface Dataset {
     schema_version: string
     generated_at_iso: string
     source_db: string
+    source_db_sha256?: string
     dataset_revision?: string
+    coverage?: {
+      episodes_total: number
+      episodes_dated: number
+      episodes_mapped: number
+      episodes_unmapped: number
+      episodes_clustered: number
+    }
     wiki_enriched?: boolean
     wikidata_enriched?: boolean
   }

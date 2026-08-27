@@ -1,9 +1,17 @@
 {
   "meta": {
     "schema_version": "2026-02-27",
-    "generated_at_iso": "2026-07-13T12:29:56.832800+00:00",
+    "generated_at_iso": "2026-08-27T18:08:08.528759+00:00",
     "source_db": "/home/user/work/code/historycasts/active.db",
-    "dataset_revision": "sha256:261310d853c7471883f9810808985a6b4c7000d7d612df3545dec41f182f924d:1783944955:10616832",
+    "source_db_sha256": "261310d853c7471883f9810808985a6b4c7000d7d612df3545dec41f182f924d",
+    "dataset_revision": "sha256:261310d853c7471883f9810808985a6b4c7000d7d612df3545dec41f182f924d:1787850656:10616832",
+    "coverage": {
+      "episodes_total": 1406,
+      "episodes_dated": 1406,
+      "episodes_mapped": 93,
+      "episodes_unmapped": 1313,
+      "episodes_clustered": 76
+    },
     "wiki_enriched": true,
     "wikidata_enriched": true
   },

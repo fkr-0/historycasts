@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### Added
+- Added a read-only `podcast-atlas audit-trust` gate for SQLite/FK integrity, episode/source identity, best-reference ownership, URL/date/span/coordinate structure, targeted boilerplate, and protected-row reporting.
+- Added compact dataset provenance/coverage metadata, including the exact source DB SHA-256 and mapped/unmapped/clustered episode coverage.
+
+### Changed
+- Made `dataset.json` generated-only for the frontend: removed the stale checked-in `frontend/public/dataset.json`, made plain frontend builds fail if it reappears, and strengthened `build-static` to prove the exported dataset and `frontend/dist/dataset.json` are byte-identical and tied to one unchanged DB revision.
+- Narrowed description cleanup to catch the recurring truncated `Die passende Ausgabe “Eine Stunde History”` cross-promo while preserving ordinary natural-language references to the show.
+
+### Fixed
+- Made `reprocess-derived --dry-run` genuinely read-only by opening SQLite in read-only URI mode instead of running schema migration/initialization code during an audit.
+
 ## [0.3.5] - 2026-05-10
 
 ### Fixed

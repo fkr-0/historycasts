@@ -33,9 +33,9 @@ def _table_exists(conn: sqlite3.Connection, table: str) -> bool:
 
 def audit_derived_cleanup(db_path: str | Path) -> dict[str, int]:
     """Report how much stored description/override data the new pass will change."""
-    conn = sqlite3.connect(str(db_path))
+    path = Path(db_path).resolve()
+    conn = sqlite3.connect(f"{path.as_uri()}?mode=ro", uri=True)
     conn.row_factory = sqlite3.Row
-    ensure_schema(conn)
     rows = conn.execute(
         "SELECT id, description_raw, description_pure FROM episodes ORDER BY id"
     ).fetchall()

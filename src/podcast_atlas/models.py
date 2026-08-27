@@ -21,7 +21,9 @@ class ExportMeta(BaseModel):
     schema_version: str = "2026-02-27"
     generated_at_iso: str
     source_db: str
+    source_db_sha256: str | None = None
     dataset_revision: str | None = None
+    coverage: dict[str, int] | None = None
     wiki_enriched: bool | None = None
     wikidata_enriched: bool | None = None
 

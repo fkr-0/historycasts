@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import sqlite3
 from pathlib import Path
 
@@ -77,7 +78,10 @@ def test_reprocess_removes_generated_override_and_preserves_handcrafted(tmp_path
     _seed_db(db)
     _write_gazetteer(gazetteer)
 
+    before_audit = hashlib.sha256(db.read_bytes()).hexdigest()
     audit = audit_derived_cleanup(db)
+    after_audit = hashlib.sha256(db.read_bytes()).hexdigest()
+    assert after_audit == before_audit
     assert audit["descriptions_changed"] == 1
     assert audit["auto_review_overrides_to_remove"] == 1
 

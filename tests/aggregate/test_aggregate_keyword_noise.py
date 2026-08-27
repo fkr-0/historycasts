@@ -80,6 +80,20 @@ def test_clean_description_truncates_inline_schedule_and_cross_promotion() -> No
     )
     assert malformed_schedule == "Im Jahr 1879 eröffnet Tietz sein Warenhaus."
 
+    truncated_cross_promo = clean_description(
+        "Baron von Münchhausen erzählt Geschichten. Die passende Ausgabe “Eine Stunde History” […]"
+    )
+    assert truncated_cross_promo == "Baron von Münchhausen erzählt Geschichten."
+
+
+def test_clean_description_preserves_natural_language_history_show_reference() -> None:
+    natural_language = (
+        "Für das Seminar vergleichen wir Eine Stunde History mit anderen Formaten und "
+        "diskutieren die Darstellung der Revolution."
+    )
+
+    assert clean_description(natural_language) == natural_language
+
 
 def test_clean_description_truncates_inline_affiliate_and_depublication_metadata() -> None:
     assert (

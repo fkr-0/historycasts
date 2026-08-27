@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import sqlite3
 from pathlib import Path
 
@@ -84,6 +85,14 @@ def test_export_dataset_includes_cluster_metric_sections(tmp_path: Path) -> None
     payload = export_dataset(db_path)
 
     assert payload["meta"]["dataset_revision"]
+    assert payload["meta"]["source_db_sha256"] == hashlib.sha256(db_path.read_bytes()).hexdigest()
+    assert payload["meta"]["coverage"] == {
+        "episodes_total": 2,
+        "episodes_dated": 2,
+        "episodes_mapped": 1,
+        "episodes_unmapped": 1,
+        "episodes_clustered": 1,
+    }
     assert "cluster_stats" in payload
     assert "cluster_term_metrics" in payload
     assert "cluster_correlations" in payload

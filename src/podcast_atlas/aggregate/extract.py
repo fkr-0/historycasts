@@ -75,7 +75,7 @@ _TRAILING_BROADCASTER_RE = re.compile(
 
 _INLINE_METADATA_RE = re.compile(
     r"(?:"
-    r"\bdie\s+passende\s+ausgabe\s+[„“”‚‘’\"']?eine\s+stunde\s+history[„“”‚‘’\"']?\s+läuft\s+am|"
+    r"\bdie\s+passende\s+ausgabe\s+[„“”‚‘’\"']?eine\s+stunde\s+history[„“”‚‘’\"']?|"
     r"\bursprünglich\s+wurden\s+die\s+sendungen\s+bei\s+deutschlandradio\s+wissen\b|"
     r"\*?affiliate-link\s*:|"
     r"\b(?:hörenswert|lesenswert|sehenswert|wissenswert)\s*:"

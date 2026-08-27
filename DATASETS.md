@@ -43,6 +43,33 @@ Historical DB snapshots moved out of active data paths:
 
 These remain outside `data/` because they are build artifacts tied to frontend and release pipelines.
 
+`active.db` is the canonical database authority. A production `dataset.json` is always generated
+from an explicitly selected SQLite database; it is not a checked-in frontend public asset.
+
+The canonical build is:
+
+```bash
+uv run podcast-atlas build-static --db active.db --dataset-out static_site/dataset.json --web-dir frontend
+```
+
+That command records the source SQLite SHA-256 in dataset metadata, fails closed if the database
+changes during export/build, and copies the exact exported bytes to `frontend/dist/dataset.json`.
+The generated build report records both hashes and whether the two dataset artifacts match.
+
+`frontend/public/dataset.json` is intentionally forbidden. A plain `pnpm build` therefore builds
+the application shell without inventing or silently bundling a stale dataset; use the canonical
+Python build above when a deployable dataset is required.
+
+For a read-only trust audit of a database before export:
+
+```bash
+uv run podcast-atlas audit-trust --db active.db
+```
+
+The audit checks SQLite/FK integrity, episode identities and source linkage, best-reference
+ownership, URL/date/span/coordinate structure, markup remnants, and narrowly targeted recurring
+boilerplate. Locked/nondeterministic rows are reported rather than rewritten.
+
 ## Future Migration Path
 
 When DB size/update frequency makes versioning heavy:

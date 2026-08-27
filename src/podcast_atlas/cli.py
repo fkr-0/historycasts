@@ -11,6 +11,7 @@ from .aggregate.reprocess import audit_derived_cleanup, reprocess_derived_data
 from .aggregate.wiki_enrich import enrich_with_wikidata
 from .api import create_app
 from .curation import delete_episode_spans
+from .data_trust import audit_data_trust
 from .db import Database
 from .feed_merge import merge_feeds
 from .geocode_places import geocode_places
@@ -216,7 +217,28 @@ def build_parser() -> argparse.ArgumentParser:
         help="Do not generate caption-warning review overrides",
     )
 
+    p_audit = sub.add_parser(
+        "audit-trust",
+        help="Run deterministic read-only SQLite/data sanitation trust assertions",
+    )
+    p_audit.add_argument("--db", required=True, help="Path to SQLite DB")
+    p_audit.add_argument(
+        "--fail-on-warnings",
+        action="store_true",
+        help="Return non-zero for sanitation warnings as well as trust errors",
+    )
+
     return p
+
+
+def cmd_audit_trust(ns: argparse.Namespace) -> int:
+    report = audit_data_trust(Path(ns.db))
+    print(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True))
+    if not bool(report["ok"]):
+        return 1
+    if bool(ns.fail_on_warnings) and int(report["warnings"]) > 0:
+        return 1
+    return 0
 
 
 def cmd_ingest(ns: argparse.Namespace) -> int:
@@ -457,6 +479,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_geocode_places(ns)
     if ns.cmd == "reprocess-derived":
         return cmd_reprocess_derived(ns)
+    if ns.cmd == "audit-trust":
+        return cmd_audit_trust(ns)
 
     raise SystemExit(2)
 
