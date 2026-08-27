@@ -30,12 +30,14 @@ function rowTitles(): string[] {
 describe("EpisodesTable", () => {
   it("sorts by episode title and shows the sort direction", () => {
     const ds = dataset()
-    render(
+    const onSortChange = vi.fn()
+    const { rerender } = render(
       <EpisodesTable
         dataset={ds}
         episodes={ds.episodes}
         selectedEpisodeId={null}
         onSelectEpisode={vi.fn()}
+        onSortChange={onSortChange}
       />
     )
 
@@ -43,6 +45,18 @@ describe("EpisodesTable", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /sort by episode/i }))
 
+    expect(onSortChange).toHaveBeenCalledWith("title", "asc")
+    rerender(
+      <EpisodesTable
+        dataset={ds}
+        episodes={ds.episodes}
+        selectedEpisodeId={null}
+        onSelectEpisode={vi.fn()}
+        sortBy="title"
+        sortDirection="asc"
+        onSortChange={onSortChange}
+      />
+    )
     expect(rowTitles()).toEqual(["Alpha? · ?", "Zulu? · ?"])
     expect(screen.getByText("↑")).toBeInTheDocument()
   })

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useDataset } from "./app/useDataset"
 import { useSearch } from "./app/useSearch"
 import { useUrlFilters } from "./app/useUrlFilters"
@@ -29,11 +29,12 @@ import {
   makeInitialTabs,
   nextActiveTabAfterClose,
 } from "./state/tabs"
+import { resetExplorationScope } from "./urlState"
 
 export default function App(): JSX.Element {
   const { dataset, err } = useDataset()
   const { filters, setFilters } = useUrlFilters()
-  const search = useSearch(dataset)
+  const search = useSearch(dataset, filters.q)
 
   const [selectedEpisodeId, setSelectedEpisodeId] = useState<number | null>(null)
   const [tabs, setTabs] = useState<CenterTab[]>(() => makeInitialTabs())
@@ -42,6 +43,19 @@ export default function App(): JSX.Element {
   const [leftCollapsed, setLeftCollapsed] = useState(false)
   const [rightCollapsed, setRightCollapsed] = useState(false)
   const [docModal, setDocModal] = useState<DocModalKind | null>(null)
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return
+    const mobile = window.matchMedia("(max-width: 767px)")
+    const applyResponsiveShell = (matches: boolean) => {
+      setLeftCollapsed(matches)
+      setRightCollapsed(matches)
+    }
+    applyResponsiveShell(mobile.matches)
+    const onChange = (event: MediaQueryListEvent) => applyResponsiveShell(event.matches)
+    mobile.addEventListener("change", onChange)
+    return () => mobile.removeEventListener("change", onChange)
+  }, [])
   const [intentModalOpen, setIntentModalOpen] = useState(false)
   const intentQueue = useIntentQueue(dataset)
 
@@ -65,6 +79,23 @@ export default function App(): JSX.Element {
     if (!dataset) return []
     return filterEpisodesByYearRange(dataset, episodesBase, activeYearRange)
   }, [dataset, episodesBase, activeYearRange])
+
+  const scopedSearchHits = useMemo(() => {
+    if (!dataset || search.hits.length === 0) return []
+
+    const visibleEpisodeIds = new Set(filteredEpisodes.map(episode => episode.id))
+    const visibleClusterIds = new Set<number>()
+    for (const episodeId of visibleEpisodeIds) {
+      const clusterId = dataset.episode_clusters[String(episodeId)]
+      if (clusterId != null) visibleClusterIds.add(clusterId)
+    }
+
+    return search.hits.filter(hit => {
+      if (hit.doc.episodeId != null) return visibleEpisodeIds.has(hit.doc.episodeId)
+      if (hit.doc.clusterId != null) return visibleClusterIds.has(hit.doc.clusterId)
+      return false
+    })
+  }, [dataset, filteredEpisodes, search.hits])
 
   const baseEpisodeIdSet = useMemo(() => new Set(episodesBase.map(e => e.id)), [episodesBase])
 
@@ -135,16 +166,20 @@ export default function App(): JSX.Element {
             collapsed={leftCollapsed}
             onUncollapse={() => setLeftCollapsed(false)}
             matchingCount={filteredEpisodes.length}
+            onResetScope={() => setFilters(current => resetExplorationScope(current))}
             onQueueOperation={intentQueue.addOperation}
           />
         }
         center={
           <div className="flex h-full flex-col gap-3">
             <HeaderBar
-              searchValue={search.query}
-              onSearchChange={search.setQuery}
+              searchValue={filters.q}
+              onSearchChange={q => setFilters(current => ({ ...current, q }))}
               onSearchEnter={search.pin}
-              onSearchClear={search.clear}
+              onSearchClear={() => {
+                setFilters(current => ({ ...current, q: "" }))
+                search.clear()
+              }}
               leftCollapsed={leftCollapsed}
               rightCollapsed={rightCollapsed}
               onToggleLeft={() => setLeftCollapsed(v => !v)}
@@ -188,6 +223,9 @@ export default function App(): JSX.Element {
                   sliderSpans={sliderSpans}
                   axisDensityK={filters.axisK}
                   topN={filters.topN}
+                  filters={filters}
+                  onChangeFilters={setFilters}
+                  onResetScope={() => setFilters(current => resetExplorationScope(current))}
                   onChangeActiveYearRange={next =>
                     setFilters(f => ({ ...f, yearMin: next[0], yearMax: next[1] }))
                   }
@@ -234,14 +272,19 @@ export default function App(): JSX.Element {
             dataset={dataset}
             collapsed={rightCollapsed}
             onUncollapse={() => setRightCollapsed(false)}
-            searchQuery={search.query}
-            searchHits={search.hits}
+            searchQuery={filters.q}
+            searchHits={scopedSearchHits}
             searchMode={search.mode}
             onSelectEpisode={openEpisodeTab}
             onSelectCluster={openClusterTab}
             episodes={filteredEpisodes}
             selectedEpisodeId={selectedEpisodeId}
             rightPanelRef={search.rightPanelRef}
+            tableSort={filters.tableSort}
+            tableDir={filters.tableDir}
+            onTableSortChange={(tableSort, tableDir) =>
+              setFilters(current => ({ ...current, tableSort, tableDir }))
+            }
             onQueueOperation={intentQueue.addOperation}
           />
         }

@@ -1,21 +1,6 @@
 import type { Dataset } from "../types"
 import type { Filters } from "../urlState"
-import { parseIsoYear } from "../utils/historicalDate"
-
-const MIN_REASONABLE_YEAR = -4000
-const MAX_REASONABLE_YEAR = new Date().getUTCFullYear() + 1
-
-function spanYears(span: { start_iso?: string; end_iso?: string }): [number, number] | null {
-  if (!span.start_iso || !span.end_iso) return null
-  const a = parseIsoYear(span.start_iso)
-  const b = parseIsoYear(span.end_iso)
-  if (a == null || b == null) return null
-
-  const lo = Math.min(a, b)
-  const hi = Math.max(a, b)
-  if (lo < MIN_REASONABLE_YEAR || hi > MAX_REASONABLE_YEAR) return null
-  return [lo, hi]
-}
+import { getExplorationIndex } from "./explorationIndex"
 
 /**
  * True iff episode has at least one span overlapping [minYear, maxYear].
@@ -27,15 +12,8 @@ export function hasSpanInYearRange(
   yearRange: [number, number]
 ): boolean {
   const [minYear, maxYear] = yearRange
-
-  for (const s of dataset.spans) {
-    if (s.episode_id !== episodeId) continue
-    const years = spanYears(s)
-    if (!years) continue
-    const [lo, hi] = years
-    if (hi >= minYear && lo <= maxYear) return true
-  }
-  return false
+  const intervals = getExplorationIndex(dataset).intervalsByEpisode.get(episodeId) ?? []
+  return intervals.some(interval => interval.endYear >= minYear && interval.startYear <= maxYear)
 }
 
 /**
@@ -46,14 +24,12 @@ export function spanYearBounds(dataset: Dataset, episodeIds: Set<number>): [numb
   let minYear = Number.POSITIVE_INFINITY
   let maxYear = Number.NEGATIVE_INFINITY
 
-  for (const s of dataset.spans) {
-    if (!episodeIds.has(s.episode_id)) continue
-    const years = spanYears(s)
-    if (!years) continue
-    const [a, b] = years
-
-    minYear = Math.min(minYear, a, b)
-    maxYear = Math.max(maxYear, a, b)
+  const { intervalsByEpisode } = getExplorationIndex(dataset)
+  for (const episodeId of episodeIds) {
+    for (const interval of intervalsByEpisode.get(episodeId) ?? []) {
+      minYear = Math.min(minYear, interval.startYear)
+      maxYear = Math.max(maxYear, interval.endYear)
+    }
   }
 
   if (!Number.isFinite(minYear) || !Number.isFinite(maxYear)) return null
@@ -61,19 +37,21 @@ export function spanYearBounds(dataset: Dataset, episodeIds: Set<number>): [numb
 }
 
 /**
- * Base filtering (podcast/title/kind/narrator/cluster) BEFORE year-range filtering.
- * This matches the intent of both original App variants.
+ * Base filtering BEFORE year-range filtering. The expensive corpus-derived values
+ * are built once per immutable dataset object and reused across interactions.
  */
 export function filterEpisodesBase(dataset: Dataset, filters: Filters) {
   const q = filters.q.trim().toLowerCase()
   const narr = filters.narrator.trim().toLowerCase()
   const kind = filters.kind
   const clusterId = filters.clusterId
+  const index = getExplorationIndex(dataset)
 
   return dataset.episodes.filter(e => {
     if (filters.podcastId !== "all" && e.podcast_id !== filters.podcastId) return false
 
-    if (q && !e.title.toLowerCase().includes(q)) return false
+    if (q && !(index.searchTextByEpisode.get(e.id) ?? e.title.toLowerCase()).includes(q))
+      return false
 
     if (kind !== "all" && (e.kind ?? "") !== kind) return false
 
@@ -83,6 +61,9 @@ export function filterEpisodesBase(dataset: Dataset, filters: Filters) {
       const cid = dataset.episode_clusters[String(e.id)]
       if (cid !== clusterId) return false
     }
+
+    if (filters.geo === "mapped" && !index.mappedEpisodeIds.has(e.id)) return false
+    if (filters.geo === "unmapped" && index.mappedEpisodeIds.has(e.id)) return false
 
     return true
   })
@@ -115,5 +96,11 @@ export function filterEpisodesByYearRange(
   episodes: Array<{ id: number }>,
   yearRange: [number, number]
 ) {
-  return episodes.filter(e => hasSpanInYearRange(dataset, e.id, yearRange))
+  const [minYear, maxYear] = yearRange
+  const intervalsByEpisode = getExplorationIndex(dataset).intervalsByEpisode
+  return episodes.filter(episode =>
+    (intervalsByEpisode.get(episode.id) ?? []).some(
+      interval => interval.endYear >= minYear && interval.startYear <= maxYear
+    )
+  )
 }

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react"
+import { getExplorationIndex } from "../state/explorationIndex"
 import type { Dataset } from "../types"
-import { parseIsoYear } from "../utils/historicalDate"
 import { colorForCluster } from "../visual/clusterVisuals"
 import ClusterLegend from "./ClusterLegend"
 
@@ -127,28 +127,6 @@ export function aggregateGazetteerMapPoints(points: MapPoint[]): MapPoint[] {
   )
 }
 
-function bestHistoricalYearByEpisode(dataset: Dataset): Map<number, number> {
-  const spanById = new Map(dataset.spans.map(span => [span.id, span]))
-  const best = new Map<number, Dataset["spans"][number]>()
-
-  for (const span of dataset.spans) {
-    const current = best.get(span.episode_id)
-    if (!current || span.score > current.score) best.set(span.episode_id, span)
-  }
-  for (const episode of dataset.episodes) {
-    const explicit = episode.best_span_id == null ? undefined : spanById.get(episode.best_span_id)
-    if (explicit) best.set(episode.id, explicit)
-  }
-
-  const years = new Map<number, number>()
-  for (const [episodeId, span] of best) {
-    const start = parseIsoYear(span.start_iso)
-    const end = parseIsoYear(span.end_iso)
-    if (start != null && end != null) years.set(episodeId, (start + end) / 2)
-  }
-  return years
-}
-
 function opacityAtYear(point: MapPoint, years: Map<number, number>, scrubYear?: number): number {
   if (scrubYear == null || Number.isNaN(scrubYear)) return 0.84
   const distances = point.episodeIds
@@ -177,7 +155,10 @@ export default function D3GazetteerMap(props: {
   )
   const placePoints = useMemo(() => aggregateGazetteerMapPoints(points), [points])
   const displayPoints = mode === "places" ? placePoints : points
-  const historicalYears = useMemo(() => bestHistoricalYearByEpisode(props.dataset), [props.dataset])
+  const historicalYears = useMemo(
+    () => getExplorationIndex(props.dataset).bestHistoricalYearByEpisode,
+    [props.dataset]
+  )
 
   useEffect(() => {
     const element = plotRef.current

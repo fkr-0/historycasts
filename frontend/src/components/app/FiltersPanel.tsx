@@ -11,6 +11,7 @@ export default function FiltersPanel(props: {
   collapsed: boolean
   onUncollapse: () => void
   matchingCount: number
+  onResetScope: () => void
   onQueueOperation?: (op: IntentOperation) => void
 }) {
   const { dataset, filters } = props
@@ -57,7 +58,32 @@ export default function FiltersPanel(props: {
         </label>
 
         <label>
-          Search title (fast filter)
+          Geography coverage
+          <select
+            aria-label="Geography coverage filter"
+            value={filters.geo ?? "all"}
+            onChange={event =>
+              props.onChange({
+                ...filters,
+                geo: event.target.value as "all" | "mapped" | "unmapped",
+              })
+            }
+            className="mt-1 w-full"
+          >
+            <option value="all">All episodes</option>
+            <option value="mapped">Mapped only</option>
+            <option value="unmapped">Unmapped only</option>
+          </select>
+          {dataset.meta.coverage && (
+            <div className="mt-1 text-[11px] text-[color:var(--muted)]">
+              {dataset.meta.coverage.episodes_mapped} mapped ·{" "}
+              {dataset.meta.coverage.episodes_unmapped} unmapped in the full corpus
+            </div>
+          )}
+        </label>
+
+        <label>
+          Search corpus
           <input
             value={filters.q}
             onChange={e => props.onChange({ ...filters, q: e.target.value })}
@@ -149,6 +175,9 @@ export default function FiltersPanel(props: {
       <div className="mt-4 text-xs text-[color:var(--muted)]">
         Matching episodes: <b>{props.matchingCount}</b>
       </div>
+      <button type="button" onClick={props.onResetScope} className="mt-2 w-full text-xs">
+        Reset exploration scope
+      </button>
     </>
   )
 }

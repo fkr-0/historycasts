@@ -1,5 +1,5 @@
+import { getExplorationIndex } from "../state/explorationIndex"
 import type { Dataset } from "../types"
-import { parseIsoYear } from "./historicalDate"
 
 export interface CoverageSummary {
   visibleEpisodes: number
@@ -28,13 +28,6 @@ export interface ExplorationMetrics {
   podcastCoverage: PodcastCoverageRow[]
   historicalBins: HistoricalBin[]
   historicalYearCount: number
-}
-
-function validMidYear(span: Dataset["spans"][number]): number | null {
-  const start = parseIsoYear(span.start_iso)
-  const end = parseIsoYear(span.end_iso)
-  if (start == null || end == null) return null
-  return (start + end) / 2
 }
 
 function niceStep(rawStep: number): number {
@@ -71,27 +64,7 @@ export function buildExplorationMetrics(
   visibleEpisodes: Dataset["episodes"],
   maxHistoricalBins = 24
 ): ExplorationMetrics {
-  const visibleIds = new Set(visibleEpisodes.map(episode => episode.id))
-  const spanById = new Map(dataset.spans.map(span => [span.id, span]))
-  const bestSpanByEpisode = new Map<number, Dataset["spans"][number]>()
-  const mappedEpisodeIds = new Set<number>()
-
-  for (const span of dataset.spans) {
-    if (!visibleIds.has(span.episode_id) || validMidYear(span) == null) continue
-    const current = bestSpanByEpisode.get(span.episode_id)
-    if (!current || span.score > current.score) bestSpanByEpisode.set(span.episode_id, span)
-  }
-
-  for (const episode of visibleEpisodes) {
-    const explicit = episode.best_span_id == null ? undefined : spanById.get(episode.best_span_id)
-    if (explicit && validMidYear(explicit) != null) bestSpanByEpisode.set(episode.id, explicit)
-  }
-
-  for (const place of dataset.places) {
-    if (visibleIds.has(place.episode_id) && place.lat != null && place.lon != null) {
-      mappedEpisodeIds.add(place.episode_id)
-    }
-  }
+  const index = getExplorationIndex(dataset)
 
   const podcastRows = new Map<number, PodcastCoverageRow>()
   const podcastTitles = new Map(dataset.podcasts.map(podcast => [podcast.id, podcast.title]))
@@ -109,14 +82,13 @@ export function buildExplorationMetrics(
     }
     row.episodes += 1
 
-    const bestSpan = bestSpanByEpisode.get(episode.id)
-    const midYear = bestSpan ? validMidYear(bestSpan) : null
+    const midYear = index.bestHistoricalYearByEpisode.get(episode.id)
     if (midYear != null) {
       row.dated += 1
       historicalYears.push(midYear)
     }
-    if (mappedEpisodeIds.has(episode.id)) row.mapped += 1
-    if (dataset.episode_clusters[String(episode.id)] != null) {
+    if (index.mappedEpisodeIds.has(episode.id)) row.mapped += 1
+    if (index.clusteredEpisodeIds.has(episode.id)) {
       row.clustered += 1
       clusteredEpisodes += 1
     }
@@ -126,8 +98,9 @@ export function buildExplorationMetrics(
   return {
     coverage: {
       visibleEpisodes: visibleEpisodes.length,
-      datedEpisodes: bestSpanByEpisode.size,
-      mappedEpisodes: mappedEpisodeIds.size,
+      datedEpisodes: historicalYears.length,
+      mappedEpisodes: visibleEpisodes.filter(episode => index.mappedEpisodeIds.has(episode.id))
+        .length,
       clusteredEpisodes,
     },
     podcastCoverage: [...podcastRows.values()].sort(

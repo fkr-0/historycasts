@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useDeferredValue, useEffect, useRef, useState } from "react"
 import {
   buildSearchIndex,
   search as runSearch,
@@ -9,24 +9,31 @@ import type { Dataset } from "../types"
 
 export type SearchMode = "preview" | "pinned"
 
-export function useSearch(dataset: Dataset | null) {
-  const [query, setQuery] = useState("")
+export function useSearch(dataset: Dataset | null, query: string) {
   const [mode, setMode] = useState<SearchMode>("preview")
   const [index, setIndex] = useState<SearchIndex | null>(null)
   const [hits, setHits] = useState<SearchHit[]>([])
+  const deferredQuery = useDeferredValue(query)
 
   // Optional: consumers can use this to scroll when pin/select happens.
   const rightPanelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!dataset) return
-    setIndex(buildSearchIndex(dataset))
+    if (!dataset) {
+      setIndex(null)
+      return
+    }
+
+    // Let the shell paint before building the richer MiniSearch index. Basic
+    // cross-filtering already uses the lightweight exploration index.
+    const timer = window.setTimeout(() => setIndex(buildSearchIndex(dataset)), 0)
+    return () => window.clearTimeout(timer)
   }, [dataset])
 
   useEffect(() => {
     if (!index) return
 
-    const q = query.trim()
+    const q = deferredQuery.trim()
     if (!q) {
       setHits([])
       setMode("preview")
@@ -35,10 +42,9 @@ export function useSearch(dataset: Dataset | null) {
 
     setHits(runSearch(index, q, 80))
     setMode(m => (m === "pinned" ? "pinned" : "preview"))
-  }, [index, query])
+  }, [index, deferredQuery])
 
   function clear() {
-    setQuery("")
     setHits([])
     setMode("preview")
   }
@@ -51,7 +57,6 @@ export function useSearch(dataset: Dataset | null) {
 
   return {
     query,
-    setQuery,
     mode,
     hits,
     clear,

@@ -24,6 +24,10 @@ export default function RightPanel(props: {
   episodes: Dataset["episodes"]
   selectedEpisodeId: number | null
 
+  tableSort?: "title" | "pub_date_iso"
+  tableDir?: "asc" | "desc"
+  onTableSortChange: (sortBy?: "title" | "pub_date_iso", direction?: "asc" | "desc") => void
+
   rightPanelRef: React.RefObject<HTMLDivElement>
 }) {
   const selectEpisodeFromSearch = useCallback(
@@ -68,6 +72,9 @@ export default function RightPanel(props: {
           episodes={props.episodes}
           selectedEpisodeId={props.selectedEpisodeId}
           onSelectEpisode={props.onSelectEpisode}
+          sortBy={props.tableSort}
+          sortDirection={props.tableDir}
+          onSortChange={props.onTableSortChange}
         />
       </div>
 

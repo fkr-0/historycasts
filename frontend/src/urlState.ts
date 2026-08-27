@@ -3,6 +3,7 @@ export type Filters = {
   q: string
   kind: string | "all"
   narrator: string
+  geo?: "all" | "mapped" | "unmapped"
   clusterId?: number
   clusterTerm?: string
   clusterYearMin?: number
@@ -13,6 +14,20 @@ export type Filters = {
   yearMin?: number
   yearMax?: number
   axisK: number
+  tableSort?: "title" | "pub_date_iso"
+  tableDir?: "asc" | "desc"
+}
+
+const parseGeo = (value: string | null): Filters["geo"] => {
+  return value === "mapped" || value === "unmapped" ? value : "all"
+}
+
+const parseTableSort = (value: string | null): Filters["tableSort"] => {
+  return value === "title" || value === "pub_date_iso" ? value : undefined
+}
+
+const parseTableDir = (value: string | null): Filters["tableDir"] => {
+  return value === "asc" || value === "desc" ? value : undefined
 }
 
 const num = (v: string | null) => (v == null || v.trim() === "" ? undefined : Number(v))
@@ -54,6 +69,7 @@ export function readFiltersFromUrl(): Filters {
     q: p.get("q") ?? "",
     kind: parseKind(p.get("kind")),
     narrator: p.get("narrator") ?? "",
+    geo: parseGeo(p.get("geo")),
     clusterId: num(p.get("cluster")),
     clusterTerm: p.get("clusterTerm") ?? "",
     clusterYearMin: num(p.get("clusterYearMin")),
@@ -64,6 +80,8 @@ export function readFiltersFromUrl(): Filters {
     yearMin: num(p.get("yearMin")),
     yearMax: num(p.get("yearMax")),
     axisK: Math.max(0.3, Math.min(3, Number(p.get("axisK") ?? "1"))),
+    tableSort: parseTableSort(p.get("tableSort")),
+    tableDir: parseTableDir(p.get("tableDir")),
   }
 }
 
@@ -81,6 +99,9 @@ export function writeFiltersToUrl(f: Filters) {
 
   if (f.narrator) p.set("narrator", f.narrator)
   else p.delete("narrator")
+
+  if (f.geo && f.geo !== "all") p.set("geo", f.geo)
+  else p.delete("geo")
 
   if (f.clusterId != null && !Number.isNaN(f.clusterId)) p.set("cluster", String(f.clusterId))
   else p.delete("cluster")
@@ -112,5 +133,31 @@ export function writeFiltersToUrl(f: Filters) {
 
   p.set("axisK", String(f.axisK))
 
+  if (f.tableSort) p.set("tableSort", f.tableSort)
+  else p.delete("tableSort")
+
+  if (f.tableDir) p.set("tableDir", f.tableDir)
+  else p.delete("tableDir")
+
   window.history.replaceState({}, "", u.toString())
+}
+
+export function resetExplorationScope(filters: Filters): Filters {
+  return {
+    ...filters,
+    podcastId: "all",
+    q: "",
+    kind: "all",
+    narrator: "",
+    geo: "all",
+    clusterId: undefined,
+    clusterTerm: "",
+    clusterYearMin: undefined,
+    clusterYearMax: undefined,
+    year: undefined,
+    yearMin: undefined,
+    yearMax: undefined,
+    tableSort: undefined,
+    tableDir: undefined,
+  }
 }

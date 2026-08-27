@@ -6,7 +6,7 @@ import {
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table"
-import { useMemo, useState } from "react"
+import { useMemo } from "react"
 import type { Dataset } from "../types"
 
 type Episode = Dataset["episodes"][number]
@@ -18,8 +18,15 @@ export default function EpisodesTable(props: {
   episodes: Episode[]
   selectedEpisodeId: number | null
   onSelectEpisode: (id: number) => void
+  sortBy?: "title" | "pub_date_iso"
+  sortDirection?: "asc" | "desc"
+  onSortChange?: (sortBy?: "title" | "pub_date_iso", direction?: "asc" | "desc") => void
 }) {
-  const [sorting, setSorting] = useState<SortingState>([])
+  const sorting = useMemo<SortingState>(
+    () =>
+      props.sortBy ? [{ id: props.sortBy, desc: (props.sortDirection ?? "asc") === "desc" }] : [],
+    [props.sortBy, props.sortDirection]
+  )
 
   const columns = useMemo(
     () => [
@@ -50,7 +57,15 @@ export default function EpisodesTable(props: {
     data: props.episodes,
     columns,
     state: { sorting },
-    onSortingChange: setSorting,
+    onSortingChange: updater => {
+      const next = typeof updater === "function" ? updater(sorting) : updater
+      const first = next[0]
+      if (first?.id === "title" || first?.id === "pub_date_iso") {
+        props.onSortChange?.(first.id, first.desc ? "desc" : "asc")
+      } else {
+        props.onSortChange?.(undefined, undefined)
+      }
+    },
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   })

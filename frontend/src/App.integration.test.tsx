@@ -32,6 +32,13 @@ function createDataset(): Dataset {
       schema_version: "test",
       generated_at_iso: new Date().toISOString(),
       source_db: "test.db",
+      coverage: {
+        episodes_total: 2,
+        episodes_dated: 2,
+        episodes_mapped: 1,
+        episodes_unmapped: 1,
+        episodes_clustered: 2,
+      },
     },
     podcasts: [{ id: 1, title: "Test Podcast", link: "https://example.com", language: "en" }],
     episodes: [
@@ -82,7 +89,17 @@ function createDataset(): Dataset {
         source_text: "beta span",
       },
     ],
-    places: [],
+    places: [
+      {
+        id: 1,
+        episode_id: 101,
+        canonical_name: "Berlin",
+        norm_key: "berlin",
+        place_kind: "city",
+        lat: 52.52,
+        lon: 13.4,
+      },
+    ],
     entities: [],
     episode_keywords: {
       "101": [{ phrase: "revolution", score: 0.8 }],
@@ -123,6 +140,7 @@ function createDataset(): Dataset {
 
 describe("App integration", () => {
   beforeEach(() => {
+    window.history.replaceState({}, "", "/")
     const dataset = createDataset()
     vi.spyOn(globalThis, "fetch").mockResolvedValue({
       ok: true,
@@ -132,6 +150,7 @@ describe("App integration", () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+    vi.unstubAllGlobals()
   })
 
   it("filters episodes and opens detail after timeline click", async () => {
@@ -140,7 +159,7 @@ describe("App integration", () => {
     const matchingEpisodes = await screen.findByText("Matching episodes:")
     expect(matchingEpisodes).toHaveTextContent("Matching episodes: 2")
 
-    const search = screen.getByLabelText(/Search title/i)
+    const search = screen.getByLabelText(/Search corpus/i)
     fireEvent.change(search, { target: { value: "Alpha" } })
 
     await waitFor(() => {
@@ -151,6 +170,60 @@ describe("App integration", () => {
 
     await screen.findByRole("button", { name: /^Episode Alpha$/i })
     expect(screen.getAllByText(/alpha span/i).length).toBeGreaterThan(0)
+  })
+
+  it("defers the interactive map and composes geography with the shared exploration scope", async () => {
+    render(<App />)
+
+    await screen.findByText("Matching episodes:")
+    expect(screen.queryByTestId("gazetteer-map-mock")).not.toBeInTheDocument()
+
+    fireEvent.change(screen.getByRole("combobox", { name: /^Geography coverage filter$/i }), {
+      target: { value: "unmapped" },
+    })
+    await waitFor(() => {
+      expect(screen.getByText(/Matching episodes:/).textContent).toContain("1")
+    })
+    expect(screen.getByText(/geography: unmapped/i)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: /open interactive map/i }))
+    expect(await screen.findByTestId("gazetteer-map-mock")).toBeInTheDocument()
+  })
+
+  it("scopes search results to the composed exploration scope", async () => {
+    render(<App />)
+
+    await screen.findByText("Matching episodes:")
+    fireEvent.change(screen.getByLabelText(/Search corpus/i), {
+      target: { value: "Alpha" },
+    })
+    await screen.findByText(/Alpha description/)
+
+    fireEvent.change(screen.getByRole("combobox", { name: /^Geography coverage filter$/i }), {
+      target: { value: "unmapped" },
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText(/Matching episodes:/).textContent).toContain("0")
+      expect(screen.queryByText(/Alpha description/)).not.toBeInTheDocument()
+      expect(screen.getByText("No results.")).toBeInTheDocument()
+    })
+  })
+
+  it("starts with side panels collapsed on mobile viewports", async () => {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockReturnValue({
+        matches: true,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })
+    )
+
+    render(<App />)
+
+    expect(await screen.findByRole("button", { name: /open filters/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /open details/i })).toBeInTheDocument()
   })
 
   it("opens cluster detail tab from cluster panel", async () => {
