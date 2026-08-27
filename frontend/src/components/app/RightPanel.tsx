@@ -11,7 +11,6 @@ export default function RightPanel(props: {
   dataset: Dataset
 
   collapsed: boolean
-  onUncollapse: () => void
 
   searchQuery: string
   searchHits: SearchHit[]
@@ -48,15 +47,16 @@ export default function RightPanel(props: {
   )
 
   if (props.collapsed) {
-    return (
-      <button type="button" onClick={props.onUncollapse} className="text-xs">
-        ←
-      </button>
-    )
+    return <aside id="details-panel" aria-label="Details panel" aria-hidden="true" />
   }
 
   return (
-    <div ref={props.rightPanelRef} className="h-full overflow-auto">
+    <aside
+      id="details-panel"
+      ref={props.rightPanelRef}
+      aria-label="Episode search and details"
+      className="h-full overflow-auto"
+    >
       <SearchResultsPanel
         dataset={props.dataset}
         query={props.searchQuery}
@@ -85,6 +85,6 @@ export default function RightPanel(props: {
           onQueueOperation={props.onQueueOperation}
         />
       </div>
-    </div>
+    </aside>
   )
 }

@@ -22,11 +22,11 @@ export default function HeaderBar(props: HeaderBarProps) {
   const releaseVersion = "v0.3.6"
 
   return (
-    <div className="sticky top-0 z-30 -mx-3 -mt-3 mb-3 border-b border-[color:var(--border)] bg-[color:var(--surface)]/90 p-3 backdrop-blur">
+    <header className="sticky top-0 z-30 -mx-3 -mt-3 mb-3 border-b border-[color:var(--border)] bg-[color:var(--surface)]/90 p-3 backdrop-blur">
       <div className="flex flex-wrap items-center gap-2">
-        <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-2)] px-2 py-1 text-xs font-semibold tracking-wide">
+        <h1 className="m-0 rounded-md border border-[color:var(--border)] bg-[color:var(--surface-2)] px-2 py-1 text-xs font-semibold tracking-wide">
           HISTORYCASTS {releaseVersion}
-        </div>
+        </h1>
         <div className="min-w-[260px] flex-1">
           <SearchBar
             value={props.searchValue}
@@ -36,7 +36,7 @@ export default function HeaderBar(props: HeaderBarProps) {
           />
         </div>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex w-full flex-wrap items-center justify-start gap-2 md:w-auto md:justify-end">
           <a
             href="https://github.com/example/historycasts"
             target="_blank"
@@ -78,6 +78,8 @@ export default function HeaderBar(props: HeaderBarProps) {
           {props.intentControls}
           <button
             type="button"
+            aria-controls="filters-panel"
+            aria-expanded={!props.leftCollapsed}
             onClick={props.onToggleLeft}
             className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface)] px-2 py-1 text-xs"
           >
@@ -85,6 +87,8 @@ export default function HeaderBar(props: HeaderBarProps) {
           </button>
           <button
             type="button"
+            aria-controls="details-panel"
+            aria-expanded={!props.rightCollapsed}
             onClick={props.onToggleRight}
             className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface)] px-2 py-1 text-xs"
           >
@@ -92,6 +96,6 @@ export default function HeaderBar(props: HeaderBarProps) {
           </button>
         </div>
       </div>
-    </div>
+    </header>
   )
 }

@@ -31,7 +31,7 @@ export default function EpisodeRasterTimeline(props: EpisodeRasterTimelineProps)
       const r = entries[0]?.contentRect
       if (!r) return
       setDimensions({
-        width: Math.max(420, Math.floor(r.width)),
+        width: Math.max(220, Math.floor(r.width)),
         height: Math.max(260, Math.floor(r.height)),
       })
     })
@@ -154,149 +154,152 @@ export default function EpisodeRasterTimeline(props: EpisodeRasterTimelineProps)
         </div>
       </div>
 
-      <svg
+      <fieldset
         aria-label="Historical episode density and interval timeline"
-        role="img"
-        width={dimensions.width}
-        height={dimensions.height - 28}
-        style={{ display: "block", width: "100%", height: "calc(100% - 24px)" }}
+        className="m-0 min-w-0 border-0 p-0"
       >
-        <title>
-          Historical episode density. Select a density bar to zoom; episode intervals open their
-          episode.
-        </title>
-        <line
-          x1={MARGIN.left}
-          x2={MARGIN.left}
-          y1={MARGIN.top}
-          y2={MARGIN.top + densityHeight}
-          stroke="rgba(230,230,250,0.35)"
-          strokeWidth={1}
-        />
-        <line
-          x1={MARGIN.left}
-          x2={MARGIN.left + innerWidth}
-          y1={MARGIN.top + densityHeight}
-          y2={MARGIN.top + densityHeight}
-          stroke="rgba(230,230,250,0.35)"
-          strokeWidth={1}
-        />
-        <text x={8} y={MARGIN.top + 12} fill="rgba(230,230,250,0.9)" fontSize={11}>
-          episodes
-        </text>
-
-        {density.map(d => {
-          const x0 = x(d.startYear)
-          const x1 = x(d.endYear + 1)
-          return (
-            // biome-ignore lint/a11y/useSemanticElements: SVG has no native button element; keyboard activation and naming are provided.
-            <g
-              key={`density-${d.startYear}`}
-              aria-label={`${d.startYear} to ${d.endYear}: ${d.count} episodes; zoom to range`}
-              onClick={() => props.onSelectYearRange?.([d.startYear, d.endYear])}
-              onKeyDown={event => {
-                if ((event.key === "Enter" || event.key === " ") && props.onSelectYearRange) {
-                  event.preventDefault()
-                  props.onSelectYearRange([d.startYear, d.endYear])
-                }
-              }}
-              role="button"
-              tabIndex={0}
-            >
-              <TimelineBarBlock
-                x={x0}
-                y={yDensity(d.count)}
-                width={Math.max(1, x1 - x0)}
-                height={MARGIN.top + densityHeight - yDensity(d.count)}
-                fill="rgba(164,144,194,0.55)"
-                stroke="rgba(255,255,255,0.16)"
-                strokeWidth={0.4}
-                rx={0.8}
-                title={`${d.startYear}–${d.endYear}: ${d.count} episodes`}
-              />
-            </g>
-          )
-        })}
-
-        {!densityOnly && (
+        <svg
+          width={dimensions.width}
+          height={dimensions.height - 28}
+          style={{ display: "block", width: "100%", height: "calc(100% - 24px)" }}
+        >
+          <title>
+            Historical episode density. Select a density bar to zoom; episode intervals open their
+            episode.
+          </title>
           <line
             x1={MARGIN.left}
             x2={MARGIN.left}
-            y1={rasterTop}
-            y2={rasterTop + rasterHeight}
+            y1={MARGIN.top}
+            y2={MARGIN.top + densityHeight}
             stroke="rgba(230,230,250,0.35)"
             strokeWidth={1}
           />
-        )}
+          <line
+            x1={MARGIN.left}
+            x2={MARGIN.left + innerWidth}
+            y1={MARGIN.top + densityHeight}
+            y2={MARGIN.top + densityHeight}
+            stroke="rgba(230,230,250,0.35)"
+            strokeWidth={1}
+          />
+          <text x={8} y={MARGIN.top + 12} fill="rgba(230,230,250,0.9)" fontSize={11}>
+            episodes
+          </text>
 
-        {rasterRows.map((row, idx) => {
-          const y = rasterTop + idx * (rowHeight + rowGap)
-          return (
-            <g key={`row-${row.episodeId}`}>
-              {row.intervals.map(it => {
-                const x0 = x(it.startYear)
-                const x1 = x(it.endYear + 1)
-                const active = props.selectedEpisodeId === row.episodeId
-                return (
-                  // biome-ignore lint/a11y/useSemanticElements: SVG has no native button element; keyboard activation and naming are provided.
-                  <g
-                    key={it.id}
-                    aria-label={`${row.title}: ${it.startYear} to ${it.endYear}; open episode`}
-                    onClick={() => props.onSelectEpisode(row.episodeId)}
-                    onKeyDown={event => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault()
-                        props.onSelectEpisode(row.episodeId)
-                      }
-                    }}
-                    role="button"
-                    style={{ cursor: "pointer" }}
-                    tabIndex={0}
-                  >
-                    <TimelineBarBlock
-                      x={x0}
-                      y={y}
-                      width={Math.max(1.5, x1 - x0)}
-                      height={rowHeight}
-                      fill={row.clusterId ? colorForCluster(row.clusterId) : "#93a3b8"}
-                      stroke={active ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.16)"}
-                      strokeWidth={active ? 1.2 : 0.45}
-                      rx={1.2}
-                      opacity={active ? 0.98 : 0.82}
-                      title={`${row.title}: ${it.startYear}–${it.endYear}`}
-                    />
-                  </g>
-                )
-              })}
-            </g>
-          )
-        })}
-
-        {xTicks.map(year => {
-          const xx = x(year)
-          return (
-            <g key={`tick-${year}`}>
-              <line
-                x1={xx}
-                x2={xx}
-                y1={axisY}
-                y2={axisY + 5}
-                stroke="rgba(230,230,250,0.42)"
-                strokeWidth={1}
-              />
-              <text
-                x={xx}
-                y={axisY + 18}
-                textAnchor="middle"
-                fill="rgba(230,230,250,0.9)"
-                fontSize={11}
+          {density.map(d => {
+            const x0 = x(d.startYear)
+            const x1 = x(d.endYear + 1)
+            return (
+              // biome-ignore lint/a11y/useSemanticElements: SVG has no native button element; keyboard activation and naming are provided.
+              <g
+                key={`density-${d.startYear}`}
+                aria-label={`${d.startYear} to ${d.endYear}: ${d.count} episodes; zoom to range`}
+                onClick={() => props.onSelectYearRange?.([d.startYear, d.endYear])}
+                onKeyDown={event => {
+                  if ((event.key === "Enter" || event.key === " ") && props.onSelectYearRange) {
+                    event.preventDefault()
+                    props.onSelectYearRange([d.startYear, d.endYear])
+                  }
+                }}
+                role="button"
+                tabIndex={0}
               >
-                {year < 0 ? `${Math.abs(year)} BCE` : year}
-              </text>
-            </g>
-          )
-        })}
-      </svg>
+                <TimelineBarBlock
+                  x={x0}
+                  y={yDensity(d.count)}
+                  width={Math.max(1, x1 - x0)}
+                  height={MARGIN.top + densityHeight - yDensity(d.count)}
+                  fill="rgba(164,144,194,0.55)"
+                  stroke="rgba(255,255,255,0.16)"
+                  strokeWidth={0.4}
+                  rx={0.8}
+                  title={`${d.startYear}–${d.endYear}: ${d.count} episodes`}
+                />
+              </g>
+            )
+          })}
+
+          {!densityOnly && (
+            <line
+              x1={MARGIN.left}
+              x2={MARGIN.left}
+              y1={rasterTop}
+              y2={rasterTop + rasterHeight}
+              stroke="rgba(230,230,250,0.35)"
+              strokeWidth={1}
+            />
+          )}
+
+          {rasterRows.map((row, idx) => {
+            const y = rasterTop + idx * (rowHeight + rowGap)
+            return (
+              <g key={`row-${row.episodeId}`}>
+                {row.intervals.map(it => {
+                  const x0 = x(it.startYear)
+                  const x1 = x(it.endYear + 1)
+                  const active = props.selectedEpisodeId === row.episodeId
+                  return (
+                    // biome-ignore lint/a11y/useSemanticElements: SVG has no native button element; keyboard activation and naming are provided.
+                    <g
+                      key={it.id}
+                      aria-label={`${row.title}: ${it.startYear} to ${it.endYear}; open episode`}
+                      onClick={() => props.onSelectEpisode(row.episodeId)}
+                      onKeyDown={event => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault()
+                          props.onSelectEpisode(row.episodeId)
+                        }
+                      }}
+                      role="button"
+                      style={{ cursor: "pointer" }}
+                      tabIndex={0}
+                    >
+                      <TimelineBarBlock
+                        x={x0}
+                        y={y}
+                        width={Math.max(1.5, x1 - x0)}
+                        height={rowHeight}
+                        fill={row.clusterId ? colorForCluster(row.clusterId) : "#93a3b8"}
+                        stroke={active ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.16)"}
+                        strokeWidth={active ? 1.2 : 0.45}
+                        rx={1.2}
+                        opacity={active ? 0.98 : 0.82}
+                        title={`${row.title}: ${it.startYear}–${it.endYear}`}
+                      />
+                    </g>
+                  )
+                })}
+              </g>
+            )
+          })}
+
+          {xTicks.map(year => {
+            const xx = x(year)
+            return (
+              <g key={`tick-${year}`}>
+                <line
+                  x1={xx}
+                  x2={xx}
+                  y1={axisY}
+                  y2={axisY + 5}
+                  stroke="rgba(230,230,250,0.42)"
+                  strokeWidth={1}
+                />
+                <text
+                  x={xx}
+                  y={axisY + 18}
+                  textAnchor="middle"
+                  fill="rgba(230,230,250,0.9)"
+                  fontSize={11}
+                >
+                  {year < 0 ? `${Math.abs(year)} BCE` : year}
+                </text>
+              </g>
+            )
+          })}
+        </svg>
+      </fieldset>
 
       {densityOnly && clippedRows.length > AUTO_ROW_LIMIT && (
         <div className="mt-1 text-[11px] text-[color:var(--muted)]">

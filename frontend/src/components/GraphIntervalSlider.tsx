@@ -23,7 +23,7 @@ export default function GraphIntervalSlider(props: {
     if (!el) return
     const ro = new ResizeObserver(entries => {
       const w = entries[0]?.contentRect.width ?? 900
-      setWidth(Math.max(320, Math.floor(w)))
+      setWidth(Math.max(220, Math.floor(w)))
     })
     ro.observe(el)
     return () => ro.disconnect()
@@ -146,96 +146,100 @@ export default function GraphIntervalSlider(props: {
           {value[0]} - {value[1]}
         </span>
       </div>
-      <svg width={width} height={h} role="img" aria-label="graph interval slider">
-        <rect x={0} y={0} width={width} height={h} fill="transparent" />
+      <fieldset aria-label="Graph interval slider" className="m-0 min-w-0 border-0 p-0">
+        <svg width={width} height={h}>
+          <title>Graph interval coverage and heat slider</title>
+          <rect x={0} y={0} width={width} height={h} fill="transparent" />
 
-        <polyline points={points} fill="none" stroke="rgba(230,230,250,0.92)" strokeWidth={1.5} />
+          <polyline points={points} fill="none" stroke="rgba(230,230,250,0.92)" strokeWidth={1.5} />
 
-        {series.map(p => {
-          const xx = x(p.year)
-          const yy = y(p.count)
-          return (
-            <line
-              key={p.year}
-              x1={xx}
-              y1={h - margin.bottom}
-              x2={xx}
-              y2={yy}
-              stroke={colorForYear(p)}
-              strokeWidth={1.6}
-            />
-          )
-        })}
+          {series.map(p => {
+            const xx = x(p.year)
+            const yy = y(p.count)
+            return (
+              <line
+                key={p.year}
+                x1={xx}
+                y1={h - margin.bottom}
+                x2={xx}
+                y2={yy}
+                stroke={colorForYear(p)}
+                strokeWidth={1.6}
+              />
+            )
+          })}
 
-        <rect
-          x={margin.left}
-          y={margin.top}
-          width={Math.max(0, x(value[0]) - margin.left)}
-          height={innerH}
-          fill="rgba(8,8,16,0.45)"
-        />
-        <rect
-          x={x(value[1])}
-          y={margin.top}
-          width={Math.max(0, margin.left + innerW - x(value[1]))}
-          height={innerH}
-          fill="rgba(8,8,16,0.45)"
-        />
+          <rect
+            x={margin.left}
+            y={margin.top}
+            width={Math.max(0, x(value[0]) - margin.left)}
+            height={innerH}
+            fill="rgba(8,8,16,0.45)"
+          />
+          <rect
+            x={x(value[1])}
+            y={margin.top}
+            width={Math.max(0, margin.left + innerW - x(value[1]))}
+            height={innerH}
+            fill="rgba(8,8,16,0.45)"
+          />
 
-        <line
-          x1={x(value[0])}
-          x2={x(value[0])}
-          y1={margin.top}
-          y2={h - margin.bottom}
-          stroke="#e6e6fa"
-          strokeWidth={2.5}
-        />
-        <line
-          x1={x(value[1])}
-          x2={x(value[1])}
-          y1={margin.top}
-          y2={h - margin.bottom}
-          stroke="#e6e6fa"
-          strokeWidth={2.5}
-        />
+          <line
+            x1={x(value[0])}
+            x2={x(value[0])}
+            y1={margin.top}
+            y2={h - margin.bottom}
+            stroke="#e6e6fa"
+            strokeWidth={2.5}
+          />
+          <line
+            x1={x(value[1])}
+            x2={x(value[1])}
+            y1={margin.top}
+            y2={h - margin.bottom}
+            stroke="#e6e6fa"
+            strokeWidth={2.5}
+          />
 
-        <circle
-          cx={x(value[0])}
-          cy={h - margin.bottom}
-          r={7}
-          fill="#a490c2"
-          onMouseDown={() => setDragging("min")}
-          onKeyDown={ev => {
-            if (ev.key === "ArrowLeft") onChange([Math.max(minYear, value[0] - 1), value[1]])
-            if (ev.key === "ArrowRight") onChange([Math.min(value[1] - 1, value[0] + 1), value[1]])
-          }}
-          role="slider"
-          aria-label="Minimum year handle"
-          aria-valuemin={minYear}
-          aria-valuemax={value[1] - 1}
-          aria-valuenow={value[0]}
-          tabIndex={0}
-          style={{ cursor: "ew-resize" }}
-        />
-        <circle
-          cx={x(value[1])}
-          cy={h - margin.bottom}
-          r={7}
-          fill="#a490c2"
-          onMouseDown={() => setDragging("max")}
-          onKeyDown={ev => {
-            if (ev.key === "ArrowLeft") onChange([value[0], Math.max(value[0] + 1, value[1] - 1)])
-            if (ev.key === "ArrowRight") onChange([value[0], Math.min(maxYear, value[1] + 1)])
-          }}
-          role="slider"
-          aria-label="Maximum year handle"
-          aria-valuemin={value[0] + 1}
-          aria-valuemax={maxYear}
-          aria-valuenow={value[1]}
-          tabIndex={0}
-          style={{ cursor: "ew-resize" }}
-        />
-      </svg>
+          <circle
+            cx={x(value[0])}
+            cy={h - margin.bottom}
+            r={7}
+            fill="#a490c2"
+            onMouseDown={() => setDragging("min")}
+            onKeyDown={ev => {
+              if (ev.key === "ArrowLeft") onChange([Math.max(minYear, value[0] - 1), value[1]])
+              if (ev.key === "ArrowRight")
+                onChange([Math.min(value[1] - 1, value[0] + 1), value[1]])
+            }}
+            role="slider"
+            aria-label="Minimum year handle"
+            aria-valuemin={minYear}
+            aria-valuemax={value[1] - 1}
+            aria-valuenow={value[0]}
+            tabIndex={0}
+            style={{ cursor: "ew-resize" }}
+          />
+          <circle
+            cx={x(value[1])}
+            cy={h - margin.bottom}
+            r={7}
+            fill="#a490c2"
+            onMouseDown={() => setDragging("max")}
+            onKeyDown={ev => {
+              if (ev.key === "ArrowLeft") onChange([value[0], Math.max(value[0] + 1, value[1] - 1)])
+              if (ev.key === "ArrowRight") onChange([value[0], Math.min(maxYear, value[1] + 1)])
+            }}
+            role="slider"
+            aria-label="Maximum year handle"
+            aria-valuemin={value[0] + 1}
+            aria-valuemax={maxYear}
+            aria-valuenow={value[1]}
+            tabIndex={0}
+            style={{ cursor: "ew-resize" }}
+          />
+        </svg>
+      </fieldset>
     </div>
   )
 }

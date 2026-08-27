@@ -77,8 +77,10 @@ export default function App(): JSX.Element {
 
   const filteredEpisodes = useMemo(() => {
     if (!dataset) return []
+    const hasExplicitYearScope = filters.yearMin != null || filters.yearMax != null
+    if (!hasExplicitYearScope) return episodesBase
     return filterEpisodesByYearRange(dataset, episodesBase, activeYearRange)
-  }, [dataset, episodesBase, activeYearRange])
+  }, [dataset, episodesBase, activeYearRange, filters.yearMin, filters.yearMax])
 
   const scopedSearchHits = useMemo(() => {
     if (!dataset || search.hits.length === 0) return []
@@ -164,14 +166,13 @@ export default function App(): JSX.Element {
             onChange={setFilters}
             onSelectCluster={openClusterTab}
             collapsed={leftCollapsed}
-            onUncollapse={() => setLeftCollapsed(false)}
             matchingCount={filteredEpisodes.length}
             onResetScope={() => setFilters(current => resetExplorationScope(current))}
             onQueueOperation={intentQueue.addOperation}
           />
         }
         center={
-          <div className="flex h-full flex-col gap-3">
+          <main aria-label="Historycasts explorer" className="flex h-full flex-col gap-3">
             <HeaderBar
               searchValue={filters.q}
               onSearchChange={q => setFilters(current => ({ ...current, q }))}
@@ -265,13 +266,12 @@ export default function App(): JSX.Element {
                 </>
               )}
             </div>
-          </div>
+          </main>
         }
         right={
           <RightPanel
             dataset={dataset}
             collapsed={rightCollapsed}
-            onUncollapse={() => setRightCollapsed(false)}
             searchQuery={filters.q}
             searchHits={scopedSearchHits}
             searchMode={search.mode}

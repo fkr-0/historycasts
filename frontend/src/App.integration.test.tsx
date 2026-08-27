@@ -77,17 +77,6 @@ function createDataset(): Dataset {
         source_section: "desc",
         source_text: "alpha span",
       },
-      {
-        id: 2,
-        episode_id: 102,
-        start_iso: "1850-01-01T00:00:00Z",
-        end_iso: "1851-01-01T00:00:00Z",
-        precision: "year",
-        qualifier: "exact",
-        score: 0.8,
-        source_section: "desc",
-        source_text: "beta span",
-      },
     ],
     places: [
       {
@@ -222,8 +211,25 @@ describe("App integration", () => {
 
     render(<App />)
 
-    expect(await screen.findByRole("button", { name: /open filters/i })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /open details/i })).toBeInTheDocument()
+    const openFilters = await screen.findByRole("button", { name: /^open filters$/i })
+    const openDetails = screen.getByRole("button", { name: /^open details$/i })
+    expect(openFilters).toHaveAttribute("aria-controls", "filters-panel")
+    expect(openFilters).toHaveAttribute("aria-expanded", "false")
+    expect(openDetails).toHaveAttribute("aria-controls", "details-panel")
+    expect(openDetails).toHaveAttribute("aria-expanded", "false")
+    expect(document.querySelector("#filters-panel")).toHaveAttribute("aria-hidden", "true")
+    expect(document.querySelector("#details-panel")).toHaveAttribute("aria-hidden", "true")
+    expect(screen.queryByRole("button", { name: "Open filters panel" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Open details panel" })).not.toBeInTheDocument()
+
+    fireEvent.click(openDetails)
+    expect(screen.getByRole("button", { name: /^hide details$/i })).toHaveAttribute(
+      "aria-expanded",
+      "true"
+    )
+    expect(document.querySelector("#details-panel")).not.toHaveAttribute("aria-hidden")
+    expect(screen.getByRole("main", { name: "Historycasts explorer" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { level: 1, name: /HISTORYCASTS/i })).toBeInTheDocument()
   })
 
   it("opens cluster detail tab from cluster panel", async () => {

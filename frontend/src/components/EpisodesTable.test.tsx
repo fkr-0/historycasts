@@ -59,5 +59,29 @@ describe("EpisodesTable", () => {
     )
     expect(rowTitles()).toEqual(["Alpha? · ?", "Zulu? · ?"])
     expect(screen.getByText("↑")).toBeInTheDocument()
+    expect(screen.getByRole("columnheader", { name: /episode/i })).toHaveAttribute(
+      "aria-sort",
+      "ascending"
+    )
+  })
+
+  it("exposes an explicit keyboard-focusable episode action", () => {
+    const ds = dataset()
+    const onSelectEpisode = vi.fn()
+    render(
+      <EpisodesTable
+        dataset={ds}
+        episodes={ds.episodes}
+        selectedEpisodeId={null}
+        onSelectEpisode={onSelectEpisode}
+        onSortChange={vi.fn()}
+      />
+    )
+
+    const openEpisode = screen.getByRole("button", { name: "Open episode Zulu" })
+    openEpisode.focus()
+    expect(openEpisode).toHaveFocus()
+    fireEvent.click(openEpisode)
+    expect(onSelectEpisode).toHaveBeenCalledWith(1)
   })
 })

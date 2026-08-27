@@ -34,7 +34,17 @@ export default function EpisodesTable(props: {
         header: "Episode",
         cell: info => (
           <div className="min-w-0">
-            <div className="truncate font-semibold">{info.getValue()}</div>
+            <button
+              type="button"
+              aria-label={`Open episode ${info.getValue()}`}
+              className="block max-w-full truncate border-0 bg-transparent p-0 text-left font-semibold hover:bg-transparent"
+              onClick={event => {
+                event.stopPropagation()
+                props.onSelectEpisode(info.row.original.id)
+              }}
+            >
+              {info.getValue()}
+            </button>
             <div className="truncate text-xs text-[color:var(--muted)]">
               {info.row.original.narrator ?? "?"} · {info.row.original.kind ?? "?"}
             </div>
@@ -50,7 +60,7 @@ export default function EpisodesTable(props: {
         ),
       }),
     ],
-    []
+    [props.onSelectEpisode]
   )
 
   const table = useReactTable({
@@ -83,7 +93,17 @@ export default function EpisodesTable(props: {
             {table.getHeaderGroups().map(hg => (
               <tr key={hg.id}>
                 {hg.headers.map(h => (
-                  <th key={h.id} className="px-3 py-2 text-xs text-[color:var(--muted)]">
+                  <th
+                    key={h.id}
+                    aria-sort={
+                      h.column.getIsSorted() === "asc"
+                        ? "ascending"
+                        : h.column.getIsSorted() === "desc"
+                          ? "descending"
+                          : "none"
+                    }
+                    className="px-3 py-2 text-xs text-[color:var(--muted)]"
+                  >
                     <button
                       type="button"
                       className="inline-flex items-center gap-1 rounded-md border-0 bg-transparent p-0 text-xs text-[color:var(--muted)] hover:bg-transparent"

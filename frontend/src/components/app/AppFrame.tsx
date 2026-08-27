@@ -29,12 +29,12 @@ export default function AppFrame(props: {
     <div className="h-screen">
       <Group direction="horizontal">
         <Panel
-          ref={leftPanelRef}
-          defaultSize={24}
-          minSize={16}
-          maxSize={42}
+          panelRef={leftPanelRef}
+          defaultSize="24%"
+          minSize="16%"
+          maxSize="42%"
           collapsible
-          collapsedSize={4}
+          collapsedSize="4%"
           className="overflow-auto border-r border-[color:var(--border)] bg-[color:var(--surface)]/92 p-3"
         >
           {props.left}
@@ -42,19 +42,19 @@ export default function AppFrame(props: {
 
         <Separator className="w-1 cursor-ew-resize bg-[color:var(--border)] transition-colors hover:bg-[color:var(--accent)]" />
 
-        <Panel defaultSize={48} minSize={28} className="overflow-hidden p-3 md:p-4">
+        <Panel defaultSize="48%" minSize="28%" className="overflow-hidden p-3 md:p-4">
           {props.center}
         </Panel>
 
         <Separator className="w-1 cursor-ew-resize bg-[color:var(--border)] transition-colors hover:bg-[color:var(--accent)]" />
 
         <Panel
-          ref={rightPanelRef}
-          defaultSize={28}
-          minSize={16}
-          maxSize={45}
+          panelRef={rightPanelRef}
+          defaultSize="28%"
+          minSize="16%"
+          maxSize="45%"
           collapsible
-          collapsedSize={4}
+          collapsedSize="4%"
           className="overflow-hidden border-l border-[color:var(--border)] bg-[color:var(--surface)]/92 p-4"
         >
           {props.right}

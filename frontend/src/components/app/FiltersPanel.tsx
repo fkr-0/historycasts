@@ -9,7 +9,6 @@ export default function FiltersPanel(props: {
   onChange: (next: Filters) => void
   onSelectCluster?: (clusterId: number) => void
   collapsed: boolean
-  onUncollapse: () => void
   matchingCount: number
   onResetScope: () => void
   onQueueOperation?: (op: IntentOperation) => void
@@ -18,15 +17,11 @@ export default function FiltersPanel(props: {
   const podcasts = dataset.podcasts ?? []
 
   if (props.collapsed) {
-    return (
-      <button type="button" onClick={props.onUncollapse} className="text-xs">
-        →
-      </button>
-    )
+    return <aside id="filters-panel" aria-label="Filters panel" aria-hidden="true" />
   }
 
   return (
-    <>
+    <aside id="filters-panel" aria-label="Filters panel">
       <div className="flex items-center justify-between">
         <h2 className="m-0 text-xl font-semibold text-[color:var(--text)]">Podcast Explorer</h2>
       </div>
@@ -178,6 +173,6 @@ export default function FiltersPanel(props: {
       <button type="button" onClick={props.onResetScope} className="mt-2 w-full text-xs">
         Reset exploration scope
       </button>
-    </>
+    </aside>
   )
 }
