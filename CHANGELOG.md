@@ -13,6 +13,17 @@
 ### Fixed
 - Made `reprocess-derived --dry-run` genuinely read-only by opening SQLite in read-only URI mode instead of running schema migration/initialization code during an audit.
 
+## [0.3.6] - 2026-05-10
+
+### Added
+- Added the `HISTORYCASTS v0.3.6` release marker to the application header.
+
+### Changed
+- Enlarged the exploration map area and adjusted timeline/map sizing so the center pane gives the map substantially more room.
+
+### Fixed
+- Restored collapsible side-panel resizing by driving expand/collapse through panel handles while retaining normal resizable min/max constraints.
+
 ## [0.3.5] - 2026-05-10
 
 ### Fixed
