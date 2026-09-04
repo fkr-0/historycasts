@@ -49,6 +49,7 @@ legacy/archives/
 *.db-shm
 *.db-wal
 *.db-journal
+active.db*.bak
 
 # Keep canonical DB versioned for CI extraction
 !active.db
